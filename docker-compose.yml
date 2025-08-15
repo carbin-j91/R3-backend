@@ -1,0 +1,48 @@
+# 실행될 서비스(컨테이너)들 정의
+services:
+  # 1. PostgreSQL + PostGIS 데이터베이스 서비스
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: r3_postgres_db
+    environment:
+      - POSTGRES_USER=r3user
+      - POSTGRES_PASSWORD=r3password
+      - POSTGRES_DB=r3db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  # 2. Redis 캐시/메시지 브로커 서비스
+  redis:
+    image: redis:7-alpine
+    container_name: r3_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # 3. FastAPI 백엔드 API 서비스
+  api:
+    container_name: r3_api
+    # 현재 디렉토리의 Dockerfile을 사용하여 이미지를 빌드합니다. (다음 단계에서 생성 예정)
+    build: .
+    #command: poetry run alembic upgrade head
+    command: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      # 현재 폴더(backend)를 컨테이너의 /app 폴더와 동기화하여 코드 변경 즉시 반영
+      - .:/app
+      - /app/.venv
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://r3user:r3password@db:5432/r3db
+    # db와 redis 서비스가 먼저 실행된 후에 api 서비스를 실행
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+# 데이터베이스 데이터를 영구적으로 보관하기 위한 볼륨 설정
+volumes:
+  postgres_data:

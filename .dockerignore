@@ -1,0 +1,21 @@
+# Docker 빌드 시 무시할 파일 및 폴더 목록
+
+# Poetry 가상 환경
+.venv
+
+# Python 캐시 파일
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 테스트 캐시
+.pytest_cache
+
+# IDE/에디터 설정 파일
+.vscode/
+.idea/
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
