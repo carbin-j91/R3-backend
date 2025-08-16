@@ -1,32 +1,47 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select # select 추가
-from app.models.user import User
-from app.schemas.user import UserCreate
+from sqlalchemy.future import select
+# ----> 1. options와 selectinload를 가져옵니다. <----
+from sqlalchemy.orm import selectinload 
+from typing import List, Optional # Optional도 추가합니다.
+import uuid
+
+from app import models, schemas
 from app.core.security import get_password_hash
 
-# ----> 아래 함수를 추가합니다. <----
-async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
+async def get_user_by_email(db: AsyncSession, email: str) -> Optional[models.User]:
     """
-    이메일 주소로 사용자를 조회합니다.
+    이메일 주소로 사용자를 조회합니다. (runs 관계를 즉시 로딩)
     """
-    result = await db.execute(select(User).filter(User.email == email))
+    # ----> 2. options(selectinload(...))를 추가하여 즉시 로딩을 적용합니다. <----
+    query = select(models.User).options(selectinload(models.User.runs)).filter(models.User.email == email)
+    result = await db.execute(query)
     return result.scalars().first()
 
-async def create_user(db: AsyncSession, user: UserCreate) -> User:
+async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User:
     """
-    새로운 사용자를 데이터베이스에 생성합니다.
-    - user: Pydantic 스키마로부터 받은 사용자 생성 데이터 (이메일, 비밀번호)
-    - db: 데이터베이스 세션
+    해싱된 비밀번호로 데이터베이스에 새로운 사용자를 생성합니다.
     """
-    # 아직 비밀번호 해싱을 적용하지 않았습니다.
-    # 우선은 평문으로 저장하고, 바로 다음 단계에서 보안을 강화할 예정입니다.
-    # ----> 2. User 모델을 만들기 전에 비밀번호를 해싱합니다. <----
     hashed_password = get_password_hash(user.password)
-    db_user = User(
+    db_user = models.User(
         email=user.email,
-        hashed_password=hashed_password  # 평문 비밀번호 대신 해시 값을 저장합니다.
+        hashed_password=hashed_password
     )
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
-    return db_user
+    
+    # 생성된 사용자를 다시 조회하여 'runs' 관계를 로드합니다.
+    # 새로 생성된 사용자는 runs가 비어있지만, 이 과정을 통해 lazy loading 문제를 방지합니다.
+    created_user = await get_user_by_email(db, email=db_user.email)
+    return created_user
+
+async def get_runs_by_user(db: AsyncSession, user_id: uuid.UUID) -> List[models.Run]:
+    """
+    특정 사용자의 모든 러닝 기록을 조회합니다.
+    """
+    result = await db.execute(
+        select(models.Run)
+        .filter(models.Run.user_id == user_id)
+        .order_by(models.Run.created_at.desc())
+    )
+    return result.scalars().all()

@@ -13,7 +13,13 @@ services:
     ports:
       - "5432:5432"
     restart: unless-stopped
-
+    # ----> 1. 아래 healthcheck 부분을 통째로 추가합니다. <----
+    # 이 설정은 5초마다 데이터베이스가 준비되었는지 확인합니다.
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U r3user -d r3db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   # 2. Redis 캐시/메시지 브로커 서비스
   redis:
     image: redis:7-alpine
@@ -29,6 +35,7 @@ services:
     build: .
     #command: poetry run alembic upgrade head
     command: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    #command: poetry run alembic revision --autogenerate -m "Add runs table"
     volumes:
       # 현재 폴더(backend)를 컨테이너의 /app 폴더와 동기화하여 코드 변경 즉시 반영
       - .:/app
@@ -39,9 +46,24 @@ services:
       - DATABASE_URL=postgresql+asyncpg://r3user:r3password@db:5432/r3db
     # db와 redis 서비스가 먼저 실행된 후에 api 서비스를 실행
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy # db 서비스가 'healthy' 상태가 될 때까지 기다립니다.
+      redis:
+        condition: service_started
     restart: unless-stopped
+  # ----> 4. Alembic 마이그레이션 전용 서비스를 추가합니다. <----
+  alembic:
+    build: .
+    # 이 서비스는 uvicorn을 실행하지 않고, 우리가 주는 명령만 기다립니다.
+    command: tail -f /dev/null
+    volumes:
+      - .:/app
+      - /app/.venv
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://r3user:r3password@db:5432/r3db
+    depends_on:
+      db:
+        condition: service_healthy # db 서비스가 'healthy' 상태가 될 때까지 기다립니다.
 
 # 데이터베이스 데이터를 영구적으로 보관하기 위한 볼륨 설정
 volumes:
