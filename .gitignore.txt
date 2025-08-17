@@ -1,0 +1,31 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+build/
+ios/Pods/
+ios/Flutter/App.framework
+ios/Flutter/engine
+ios/Flutter/flutter_assets
+ios/.symlinks/
+android/.gradle/
+android/app/build/
+android/gradle/
+android/local.properties
+*.iml
+*.ipr
+
+# Python/FastAPI/Docker
+__pycache__/
+.venv/
+.env
+*.pyc
+.pytest_cache/
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
