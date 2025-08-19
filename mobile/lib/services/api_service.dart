@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart'; // kIsWeb을 사용하기 위해 필요합니다.
+import 'package:mobile/models/user.dart'; // 1. 방금 만든 User 모델을 가져옵니다.
+import 'package:mobile/services/secure_storage_service.dart'; // 2. 보안 저장소 서비스를 가져옵니다.
 
 class ApiService {
   //  static const String _baseUrl = 'http://192.168.219.101:8000';
@@ -29,6 +31,33 @@ class ApiService {
       // 백엔드가 보내주는 구체적인 에러 메시지를 사용합니다.
       final errorData = jsonDecode(utf8.decode(response.bodyBytes));
       throw Exception(errorData['detail'] ?? 'Failed to login');
+    }
+  }
+
+  static Future<User> getUserProfile() async {
+    // 금고에서 토큰을 읽어옵니다.
+    final token = await SecureStorageService().readToken();
+    if (token == null) {
+      throw Exception('Token not found');
+    }
+
+    final url = Uri.parse('$_baseUrl/api/v1/users/me');
+
+    // HTTP 요청 헤더에 'Authorization' 정보를 담아 보냅니다.
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // 성공적으로 응답을 받으면, JSON 데이터를 User 객체로 변환하여 반환합니다.
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return User.fromJson(data);
+    } else {
+      throw Exception('Failed to load user profile');
     }
   }
 }

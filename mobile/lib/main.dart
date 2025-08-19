@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart'; // 카카오 SDK 임포트
-import 'package:mobile/login_screen.dart'; // 우리가 만든 로그인 화면을 가져옵니다.
+import 'package:mobile/splash_screen.dart'; // 우리가 만든 로그인 화면을 가져옵니다.
 
 void main() {
   // main 함수 시작 전에 카카오 SDK를 초기화합니다.
@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
       ),
       debugShowCheckedModeBanner: false,
       // 앱의 첫 화면을 LoginScreen으로 지정합니다.
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }

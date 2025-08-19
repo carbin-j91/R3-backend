@@ -57,3 +57,11 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate) -> models.User
     await db.refresh(db_user)
     created_user = await get_user_by_email(db, email=db_user.email)
     return created_user
+
+async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> Optional[models.User]:
+    """
+    사용자 ID로 사용자를 조회합니다. (runs 관계를 즉시 로딩)
+    """
+    query = select(models.User).options(selectinload(models.User.runs)).filter(models.User.id == user_id)
+    result = await db.execute(query)
+    return result.scalars().first()

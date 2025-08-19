@@ -2,12 +2,12 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid # uuid를 가져옵니다.
 
 from app import crud, models, schemas
 from app.core.config import settings
-from app.db.session import AsyncSessionLocal # << 이 줄을 추가합니다.
+from app.db.session import AsyncSessionLocal
 
-# get_db 함수를 여기에 정의합니다.
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as session:
         yield session
@@ -29,14 +29,17 @@ async def get_current_user(
         payload = jwt.decode(
             token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
-        email: str = payload.get("sub")
-        if email is None:
+        # ----> "sub"는 이제 이메일이 아닌 ID입니다. <----
+        user_id: str = payload.get("sub")
+        if user_id is None:
             raise credentials_exception
-        token_data = schemas.TokenData(email=email)
-    except JWTError:
+        # token_data = schemas.TokenData(email=email) # 이 줄은 더 이상 필요 없습니다.
+    except (JWTError, ValueError): # ID가 UUID 형식이 아닐 경우도 대비합니다.
         raise credentials_exception
     
-    user = await crud.user.get_user_by_email(db, email=token_data.email)
+    # ----> 이메일 대신 ID로 사용자를 찾습니다. <----
+    user = await crud.user.get_user_by_id(db, user_id=uuid.UUID(user_id))
+    
     if user is None:
         raise credentials_exception
     return user

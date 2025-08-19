@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/services/api_service.dart'; // API 서비스 파일을 사용할 예정입니다.
+import 'package:mobile/services/secure_storage_service.dart'; // <-- 1. 보안 저장소 서비스를 가져옵니다.
+import 'package:mobile/home_screen.dart';
 
 // StatefulWidget으로 변경하여 입력값과 에러 메시지를 관리합니다.
 class LoginScreen extends StatefulWidget {
@@ -37,11 +39,19 @@ class _LoginScreenState extends State<LoginScreen> {
       // ApiService를 호출하여 로그인을 시도합니다.
       final token = await ApiService.emailLogin(email, password);
 
+      // ----> 2. 토큰을 안전한 금고에 저장합니다. <----
+      await SecureStorageService().saveToken(token);
+
       print('============================================');
       print('R3 서버 토큰 발급 성공: $token');
       print('============================================');
 
-      // TODO: 발급받은 토큰을 기기에 안전하게 저장하고 메인 화면으로 이동하기
+      // 위젯이 아직 화면에 있는지 확인하고, 안전하게 화면을 이동시킵니다.
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
     } catch (e) {
       print('로그인 실패: $e');
       setState(() {
