@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud, schemas
-from app.core.security import create_access_token, verify_password # verify_password 추가
+from app.core.security import create_access_token, verify_password
 from app.core.config import settings
 from app.api.v1 import deps
 
@@ -33,7 +33,6 @@ async def login_for_access_token(
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-
 @router.post("/kakao", response_model=schemas.Token)
 async def login_via_kakao(
     user_in: schemas.UserSocialLogin,
@@ -56,11 +55,3 @@ async def login_via_kakao(
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
-
-# ----> 아래 테스트용 함수를 추가합니다. <----
-@router.get("/test-login-route")
-def test_login_route():
-    """
-    login.py 라우터가 제대로 등록되었는지 확인하기 위한 테스트 API입니다.
-    """
-    return {"message": "Login router is working!"}

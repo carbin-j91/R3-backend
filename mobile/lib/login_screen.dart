@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/services/api_service.dart'; // API 서비스 파일을 사용할 예정입니다.
 import 'package:mobile/services/secure_storage_service.dart'; // <-- 1. 보안 저장소 서비스를 가져옵니다.
-import 'package:mobile/home_screen.dart';
+import 'package:mobile/main_screen.dart'; // HomeScreen 대신 MainScreen을 가져옵니다.
+import 'package:mobile/screens/home_screen.dart';
 
 // StatefulWidget으로 변경하여 입력값과 에러 메시지를 관리합니다.
 class LoginScreen extends StatefulWidget {
@@ -49,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // 위젯이 아직 화면에 있는지 확인하고, 안전하게 화면을 이동시킵니다.
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainScreen()),
         );
       }
     } catch (e) {

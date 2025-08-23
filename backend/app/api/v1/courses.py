@@ -19,7 +19,6 @@ async def create_course(
     """
     특정 러닝 기록(Run)으로부터 새로운 코스를 생성합니다.
     """
-    # 먼저, 해당 run 기록이 현재 사용자의 것인지 확인합니다.
     run = await crud.run.get_run(db=db, id=run_id, user_id=current_user.id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
