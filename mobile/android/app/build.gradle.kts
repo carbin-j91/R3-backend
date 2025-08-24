@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    // 1. namespace도 com.r3.app으로 수정해야 합니다.
     namespace = "com.r3.app" 
-    compileSdk = flutter.compileSdkVersion
     
-    // 2. ndkVersion은 한 번만 선언해야 합니다.
+    // 1. compileSdk를 36으로 수정합니다.
+    compileSdk = 36
+    
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -24,8 +24,10 @@ android {
 
     defaultConfig {
         applicationId = "com.r3.app"
-        // 3. minSdk = 21 이 올바른 문법입니다.
-        minSdk = 21
+        
+        // 2. minSdk를 23으로 수정합니다.
+        minSdk = 23
+        
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

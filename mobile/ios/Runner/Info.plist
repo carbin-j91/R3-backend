@@ -65,5 +65,9 @@
     </array>
     </dict>
 </plist>
-</dict>
+<key>NSLocationWhenInUseUsageDescription</key>
+    <string>이 앱은 러닝 경로를 추적하기 위해 사용자의 위치 정보가 필요합니다.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>이 앱은 백그라운드에서도 러닝 경로를 계속 추적하기 위해 사용자의 위치 정보가 필요합니다.</string>
+    </dict>
 </plist>

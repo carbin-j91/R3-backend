@@ -6,7 +6,7 @@ import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/screens/home_screen.dart';
 import 'package:mobile/screens/explore_screen.dart';
 import 'package:mobile/screens/record_screen.dart';
-import 'package:mobile/screens/my_info_screen.dart';
+import 'package:mobile/screens/album_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -24,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(),
     ExploreScreen(),
     RecordScreen(),
-    MyInfoScreen(),
+    AlbumScreen(),
   ];
 
   // 탭을 눌렀을 때 _selectedIndex 값을 변경하여 화면을 전환하는 함수입니다.
@@ -101,8 +101,8 @@ class _MainScreenState extends State<MainScreen> {
               index: 2,
             ),
             _buildNavItem(
-              icon: Icons.person,
-              label: AppStrings.tabMyInfo,
+              icon: Icons.photo_album_outlined,
+              label: AppStrings.tabAlbum,
               index: 3,
             ),
           ],

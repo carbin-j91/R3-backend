@@ -12,7 +12,7 @@ import 'package:mobile/services/secure_storage_service.dart';
 class ApiService {
   static final String _baseUrl = kIsWeb
       ? 'http://localhost:8000'
-      : 'http://10.0.2.2:8000'; // 실제 기기 테스트 시에는 컴퓨터의 로컬 IP로 변경해야 합니다.
+      : 'http://192.168.219.101:8000'; // 실제 기기 테스트 시에는 컴퓨터의 로컬 IP로 변경해야 합니다.
 
   // 이메일/비밀번호 로그인 함수
   static Future<String> emailLogin(String email, String password) async {

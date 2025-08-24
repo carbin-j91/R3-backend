@@ -49,4 +49,48 @@ class AppStrings {
   static const String recordTabRuns = '러닝기록';
   static const String recordTabJournal = '훈련일지';
   static const String recordTabAlbum = '앨범';
+
+  // 하단 탭
+  static const String tabAlbum = '앨범';
+
+  // 홈 화면 탭
+  static const String homeTabMain = '메인';
+  static const String homeTabRanking = '랭킹';
+  static const String homeTabAds = '광고';
+
+  // 홈 화면 - 메인 탭
+  static const String startRunning = '러닝 시작하기';
+  static const String noticeArea = '공지사항이 표시될 공간입니다.';
+
+  // 홈 화면 - 랭킹 탭
+  static const String rankingArea = '랭킹 정보가 표시될 공간입니다.';
+
+  // 홈 화면 - 광고 탭
+  static const String adsArea = '광고가 2열로 표시될 공간입니다.';
+
+  // 러닝 화면
+
+  // 러닝 화면 UI
+  static const String runDistance = '거리';
+  static const String runTime = '시간';
+  static const String runPace = '페이스';
+  static const String runAvgPace = '평균 페이스';
+  static const String runBPM = 'BPM';
+  static const String runSplits = '구간';
+  static const String runningArea = 'GPS 추적 기능이 구현될 화면입니다.';
+  // ----> 아래 한 줄을 추가합니다. <----
+  static const String locationPermissionDenied =
+      '위치 권한이 거부되어 이 기능을 사용할 수 없습니다.';
+  // 러닝 컨트롤
+  static const String runPause = '일시정지';
+  static const String runResume = '다시시작';
+  static const String runFinish = '종료';
+  static const String runFinishConfirmTitle = '러닝 종료';
+  static const String runFinishConfirmContent = '현재 기록을 저장하시겠습니까?';
+  static const String runSave = '저장';
+  static const String runCancel = '취소';
+
+  // 지도 준비 화면
+  static const String mapReadyTitle = '러닝 준비';
+  static const String startRunningFromMap = '여기서 러닝 시작';
 }
