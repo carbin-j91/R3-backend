@@ -65,3 +65,20 @@ async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> Optional[model
     query = select(models.User).options(selectinload(models.User.runs)).filter(models.User.id == user_id)
     result = await db.execute(query)
     return result.scalars().first()
+
+async def update_user(db: AsyncSession, *, db_user: models.User, user_in: schemas.UserUpdate) -> models.User:
+    """
+    사용자 정보를 수정합니다.
+    """
+    # Pydantic 모델을 딕셔너리로 변환합니다.
+    update_data = user_in.model_dump(exclude_unset=True)
+    
+    # 딕셔너리의 각 항목을 기존 사용자 객체(db_user)에 반영합니다.
+    for field, value in update_data.items():
+        setattr(db_user, field, value)
+        
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+    

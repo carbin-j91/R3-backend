@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/schemas/run_schema.dart';
 import 'package:mobile/services/api_service.dart';
+import 'package:intl/intl.dart';
 
 class RunningStatsScreen extends StatefulWidget {
   const RunningStatsScreen({super.key});
@@ -45,7 +46,6 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   void _toggleRunningState() {
     setState(() {
       _isRunning = !_isRunning;
-
       if (_isRunning) {
         _startTracking();
         _startTimer();
@@ -59,7 +59,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   void _startTracking() {
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 10, // 10미터 이상 이동 시에만 위치 업데이트
+      distanceFilter: 10,
     );
     _positionStream =
         Geolocator.getPositionStream(locationSettings: locationSettings).listen(
@@ -106,13 +106,24 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     _stopTimer();
     if (mounted) setState(() => _isRunning = false);
 
-    print('총 거리: $_totalDistance, 총 시간: $_elapsedSeconds');
+    final avgPace = _totalDistance > 0
+        ? (_elapsedSeconds / (_totalDistance / 1000))
+        : 0.0;
+
+    final runToSave = RunCreate(
+      distance: _totalDistance,
+      duration: _elapsedSeconds.toDouble(),
+      avgPace: avgPace,
+      route: _routePoints
+          .map((p) => {'lat': p.latitude, 'lng': p.longitude})
+          .toList(),
+    );
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildFinishSheet(),
+      builder: (context) => _buildFinishSheet(runToSave),
     );
   }
 
@@ -191,10 +202,10 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     );
   }
 
-  Widget _buildFinishSheet() {
+  Widget _buildFinishSheet(RunCreate runToSave) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
-      clipBehavior: Clip.antiAlias, // 자식 위젯이 부모의 경계를 넘지 않도록 함
+      clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
@@ -241,10 +252,23 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
                     child: const Text(AppStrings.runCancel),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      // TODO: ApiService.createRun() 호출
-                      Navigator.of(context).pop(); // BottomSheet 닫기
-                      Navigator.of(context).pop(); // RunningScreen 닫기
+                    onPressed: () async {
+                      try {
+                        await ApiService.createRun(runToSave);
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                        }
+                      } catch (e) {
+                        print('기록 저장 실패: $e');
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('기록 저장에 실패했습니다. 다시 시도해주세요.'),
+                            ),
+                          );
+                        }
+                      }
                     },
                     child: const Text(AppStrings.runSave),
                   ),
@@ -266,7 +290,6 @@ class _OverallStatsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1km당 걸린 시간(초)
     final paceInSeconds = distance > 0 ? (seconds / (distance / 1000)) : 0;
     final paceMinutes = (paceInSeconds / 60).floor();
     final paceSeconds = (paceInSeconds % 60).round();
@@ -280,6 +303,7 @@ class _OverallStatsPage extends StatelessWidget {
             color: Colors.white,
             fontSize: 80,
             fontWeight: FontWeight.bold,
+            fontFeatures: [FontFeature.tabularFigures()],
           ),
         ),
         const Text(
@@ -318,6 +342,7 @@ class _OverallStatsPage extends StatelessWidget {
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 32,
+            fontFeatures: [FontFeature.tabularFigures()],
           ),
         ),
       ],

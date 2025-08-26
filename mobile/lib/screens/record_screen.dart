@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/services/api_service.dart';
+import 'package:mobile/screens/run_detail_screen.dart';
 
 // 탭 구조를 관리하기 위해 DefaultTabController를 사용합니다.
 class RecordScreen extends StatelessWidget {
@@ -143,7 +144,12 @@ class RunListItem extends StatelessWidget {
         ),
         trailing: const Icon(Icons.arrow_forward_ios),
         onTap: () {
-          /* TODO: 기록 상세 보기 화면으로 이동 */
+          // onTap을 누르면 RunDetailScreen으로 이동하도록 수정합니다.
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => RunDetailScreen(runId: run.id),
+            ),
+          );
         },
       ),
     );

@@ -35,3 +35,13 @@ class UserSocialLogin(BaseModel):
     social_id: str
     nickname: Optional[str] = None
     email: Optional[EmailStr] = None # 이메일은 선택적으로 받습니다.
+    
+class UserUpdate(BaseModel):
+    """
+    사용자 프로필을 수정할 때 사용할 스키마
+    모든 필드는 선택적으로 만듭니다.
+    """
+    nickname: Optional[str] = None
+    # 향후 비밀번호 변경 등을 추가 가능
+    # password: Optional[str] = None
+    

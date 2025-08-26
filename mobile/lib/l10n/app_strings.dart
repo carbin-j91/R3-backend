@@ -45,6 +45,7 @@ class AppStrings {
 
   // 기록 페이지 메뉴
   static const String trainingLog = '훈련일지';
+
   // 기록 페이지 탭
   static const String recordTabRuns = '러닝기록';
   static const String recordTabJournal = '훈련일지';
@@ -93,4 +94,11 @@ class AppStrings {
   // 지도 준비 화면
   static const String mapReadyTitle = '러닝 준비';
   static const String startRunningFromMap = '여기서 러닝 시작';
+
+  // 프로필 수정 화면
+  static const String editProfileTitle = '프로필 수정';
+  static const String saveChanges = '변경사항 저장';
+  static const String nicknameHint = '새로운 닉네임을 입력하세요';
+  static const String profileUpdateSuccess = '프로필이 성공적으로 업데이트되었습니다.';
+  static const String profileUpdateFailed = '프로필 업데이트에 실패했습니다.';
 }

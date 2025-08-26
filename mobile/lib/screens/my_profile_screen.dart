@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/models/user.dart';
-import 'package:mobile/services/api_service.dart';
 import 'package:mobile/l10n/app_strings.dart';
+import 'package:mobile/models/user.dart';
+import 'package:mobile/screens/edit_profile_screen.dart';
+import 'package:mobile/services/api_service.dart';
 
 class MyProfileScreen extends StatefulWidget {
   const MyProfileScreen({super.key});
@@ -19,12 +20,36 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     _userProfileFuture = ApiService.getUserProfile();
   }
 
+  void _refreshProfile() {
+    setState(() {
+      _userProfileFuture = ApiService.getUserProfile();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // 2. 모든 하드코딩된 텍스트를 AppStrings로 교체합니다.
         title: const Text(AppStrings.profileTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () async {
+              final user = await _userProfileFuture;
+              if (user != null && mounted) {
+                final result = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        EditProfileScreen(currentNickname: user.nickname ?? ''),
+                  ),
+                );
+                if (result == true) {
+                  _refreshProfile();
+                }
+              }
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<User>(
         future: _userProfileFuture,

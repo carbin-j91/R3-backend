@@ -2,17 +2,17 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-// 필요한 모든 모델들을 가져옵니다.
+// 필요한 모든 모델과 스키마를 가져옵니다.
 import 'package:mobile/models/user.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/models/post.dart';
-
+import 'package:mobile/schemas/run_schema.dart';
 import 'package:mobile/services/secure_storage_service.dart';
 
 class ApiService {
   static final String _baseUrl = kIsWeb
       ? 'http://localhost:8000'
-      : 'http://192.168.219.101:8000'; // 실제 기기 테스트 시에는 컴퓨터의 로컬 IP로 변경해야 합니다.
+      : 'http://192.168.219.101:8000'; // 실제 기기 테스트 시에는 컴퓨터의 로컬 IP 사용
 
   // 이메일/비밀번호 로그인 함수
   static Future<String> emailLogin(String email, String password) async {
@@ -76,7 +76,7 @@ class ApiService {
     }
   }
 
-  // 게시글 목록 조회 함수 (딱 한 번만 정의됩니다)
+  // 게시글 목록 조회 함수
   static Future<List<Post>> getPosts() async {
     final url = Uri.parse('$_baseUrl/api/v1/posts/');
     final response = await http.get(
@@ -89,6 +89,81 @@ class ApiService {
       return data.map((json) => Post.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load posts');
+    }
+  }
+
+  // 러닝 기록 생성 함수
+  static Future<void> createRun(RunCreate runData) async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) {
+      throw Exception('Token not found');
+    }
+
+    final url = Uri.parse('$_baseUrl/api/v1/runs/');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: runData.toJson(),
+    );
+
+    if (response.statusCode != 200) {
+      print('Error Body: ${response.body}');
+      throw Exception('Failed to create run');
+    }
+  }
+
+  // 러닝 상세 기록 요청 함수
+  static Future<Run> getRunDetail(String runId) async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) {
+      throw Exception('Token not found');
+    }
+
+    final url = Uri.parse('$_baseUrl/api/v1/runs/$runId');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return Run.fromJson(data);
+    } else {
+      throw Exception('Failed to load run detail');
+    }
+  }
+
+  // 프로필 수정 요청 함수
+  static Future<User> updateUserProfile(String nickname) async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) {
+      throw Exception('Token not found');
+    }
+
+    final url = Uri.parse('$_baseUrl/api/v1/users/me');
+
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'nickname': nickname}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return User.fromJson(data);
+    } else {
+      throw Exception('Failed to update profile');
     }
   }
 }
