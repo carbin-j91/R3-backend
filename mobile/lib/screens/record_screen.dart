@@ -3,37 +3,47 @@ import 'package:intl/intl.dart';
 import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/services/api_service.dart';
+import 'package:mobile/screens/my_runs_screen.dart';
 import 'package:mobile/screens/run_detail_screen.dart';
 
-// 탭 구조를 관리하기 위해 DefaultTabController를 사용합니다.
 class RecordScreen extends StatelessWidget {
   const RecordScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3, // 탭의 개수
+      length: 3,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text(AppStrings.tabRecord),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: AppStrings.recordTabRuns),
-              Tab(text: AppStrings.recordTabJournal),
-              Tab(text: AppStrings.recordTabAlbum),
+        // AppBar를 제거하고, body에서부터 시작합니다.
+        body: SafeArea(
+          child: Column(
+            children: [
+              // 1. 커스텀 탭바
+              const TabBar(
+                tabs: [
+                  Tab(text: AppStrings.recordTabRuns),
+                  Tab(text: AppStrings.recordTabJournal),
+                  Tab(text: AppStrings.recordTabAlbum),
+                ],
+                labelColor: Colors.blueAccent,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.blueAccent,
+              ),
+              // 2. 탭바 아래의 내용
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    // '러닝기록' 탭: 기존 RunningRecordsList 위젯을 그대로 사용
+                    RunningRecordsList(),
+                    // '훈련일지' 탭 (임시)
+                    Center(child: Text('훈련일지 화면입니다.')),
+                    // '앨범' 탭 (임시)
+                    Center(child: Text('앨범 화면입니다.')),
+                  ],
+                ),
+              ),
             ],
           ),
-        ),
-        // TabBarView는 각 탭에 해당하는 화면을 보여줍니다.
-        body: const TabBarView(
-          children: [
-            // 1번째 탭: 러닝기록
-            RunningRecordsList(),
-            // 2번째 탭: 훈련일지 (임시)
-            Center(child: Text('훈련일지 화면입니다.')),
-            // 3번째 탭: 앨범 (임시)
-            Center(child: Text('앨범 화면입니다.')),
-          ],
         ),
       ),
     );

@@ -22,10 +22,10 @@ class AppStrings {
   static const String createJournal = '일지쓰기';
   static const String savePhoto = '사진저장';
 
-  // 탐색(Explore) 메뉴
-  static const String exploreCourse = '러닝코스';
-  static const String exploreItem = '러닝아이템';
-  static const String exploreRace = '러닝대회';
+  // 탐색 페이지 탭
+  static const String exploreTabCourses = '도전 코스';
+  static const String exploreTabHotplace = '러닝 핫플';
+  static const String exploreTabTips = '러닝 팁';
 
   // 내 정보(My Info) 메뉴
   static const String myProfile = '나의 정보';

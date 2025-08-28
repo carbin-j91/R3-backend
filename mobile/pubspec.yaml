@@ -52,10 +52,23 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: "^0.13.1"
+  flutter_native_splash: ^2.3.1 # <--- 이 줄을 추가합니다.
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_icon.png" # <--- 아까 추가한 이미지 경로를 지정합니다.
+  min_sdk_android: 21 # android min sdk min:16, default:21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
-
+flutter_native_splash: # <--- 이 설정을 추가합니다.
+  color: "#FFFFFF" # 스플래시 화면 배경색 (원하는 색상으로 변경 가능)
+  image: assets/images/app_icon.png # <--- 스플래시 화면에 표시할 이미지 경로
+  android_gravity: center
+  ios_content_mode: center
+  web: false # 웹에서는 사용하지 않음
 # The following section is specific to Flutter packages.
 flutter:
   # The following line ensures that the Material Icons font is
@@ -67,6 +80,7 @@ flutter:
   # assets 폴더를 Flutter에 등록합니다.
   assets:
     - assets/
+    - assets/images/app_icon.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
