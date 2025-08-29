@@ -71,6 +71,10 @@ class AppStrings {
 
   // 러닝 화면
 
+  // 지도 준비 화면
+  static const String mapReadyTitle = '러닝 준비';
+  static const String startRunningFromMap = '여기서 러닝 시작';
+
   // 러닝 화면 UI
   static const String runDistance = '거리';
   static const String runTime = '시간';
@@ -78,8 +82,8 @@ class AppStrings {
   static const String runAvgPace = '평균 페이스';
   static const String runBPM = 'BPM';
   static const String runSplits = '구간';
+  static const String runCalories = '칼로리';
   static const String runningArea = 'GPS 추적 기능이 구현될 화면입니다.';
-  // ----> 아래 한 줄을 추가합니다. <----
   static const String locationPermissionDenied =
       '위치 권한이 거부되어 이 기능을 사용할 수 없습니다.';
   // 러닝 컨트롤
@@ -91,10 +95,11 @@ class AppStrings {
   static const String runSave = '저장';
   static const String runCancel = '취소';
 
-  // 지도 준비 화면
-  static const String mapReadyTitle = '러닝 준비';
-  static const String startRunningFromMap = '여기서 러닝 시작';
-
+  // 구간 기록 페이지
+  static const String splitsHeaderKm = '구간 (km)';
+  static const String splitsHeaderPace = '페이스';
+  static const String splitsHeaderTime = '시간';
+  static const String runElevation = '고도 상승';
   // 프로필 수정 화면
   static const String editProfileTitle = '프로필 수정';
   static const String saveChanges = '변경사항 저장';
