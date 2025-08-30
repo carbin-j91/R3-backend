@@ -1,20 +1,24 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-
-// 필요한 모든 모델과 스키마를 가져옵니다.
 import 'package:mobile/models/user.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/models/post.dart';
-import 'package:mobile/schemas/run_schema.dart';
+import 'package:mobile/schemas/run_update_schema.dart';
 import 'package:mobile/services/secure_storage_service.dart';
+import 'package:mobile/schemas/run_edit_schema.dart';
 
 class ApiService {
-  static final String _baseUrl = kIsWeb
-      ? 'http://localhost:8000'
-      : 'http://192.168.219.101:8000'; // 실제 기기 테스트 시에는 컴퓨터의 로컬 IP 사용
+  // ngrok을 사용하지 않을 때는 이 주석을 풀고, 아래 const 주석 처리
+  // static final String _baseUrl = kIsWeb
+  //     ? 'http://localhost:8000'
+  //     : 'http://192.168.x.x:8000'; // 실제 IP 주소로 변경
 
-  // 이메일/비밀번호 로그인 함수
+  // ngrok을 사용할 때의 주소
+  static const String _baseUrl = 'https://c72f9434b1e3.ngrok-free.app';
+
+  // --- 사용자 관련 API ---
+
   static Future<String> emailLogin(String email, String password) async {
     final url = Uri.parse('$_baseUrl/api/v1/token');
     final response = await http.post(
@@ -22,134 +26,35 @@ class ApiService {
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: {'username': email, 'password': password},
     );
-
     if (response.statusCode == 200) {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data['access_token'];
+      return jsonDecode(utf8.decode(response.bodyBytes))['access_token'];
     } else {
-      final errorData = jsonDecode(utf8.decode(response.bodyBytes));
-      throw Exception(errorData['detail'] ?? 'Failed to login');
+      throw Exception(
+        jsonDecode(utf8.decode(response.bodyBytes))['detail'] ??
+            'Failed to login',
+      );
     }
   }
 
-  // 내 정보 조회 함수
   static Future<User> getUserProfile() async {
     final token = await SecureStorageService().readToken();
     if (token == null) throw Exception('Token not found');
-
     final url = Uri.parse('$_baseUrl/api/v1/users/me');
     final response = await http.get(
       url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
-
     if (response.statusCode == 200) {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      return User.fromJson(data);
+      return User.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     } else {
       throw Exception('Failed to load user profile');
     }
   }
 
-  // 러닝 기록 목록 조회 함수
-  static Future<List<Run>> getRuns() async {
+  static Future<User> updateUserProfile({String? nickname}) async {
     final token = await SecureStorageService().readToken();
     if (token == null) throw Exception('Token not found');
-
-    final url = Uri.parse('$_baseUrl/api/v1/runs/');
-    final response = await http.get(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data.map((json) => Run.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load runs');
-    }
-  }
-
-  // 게시글 목록 조회 함수
-  static Future<List<Post>> getPosts() async {
-    final url = Uri.parse('$_baseUrl/api/v1/posts/');
-    final response = await http.get(
-      url,
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data.map((json) => Post.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load posts');
-    }
-  }
-
-  // 러닝 기록 생성 함수
-  static Future<void> createRun(RunCreate runData) async {
-    final token = await SecureStorageService().readToken();
-    if (token == null) {
-      throw Exception('Token not found');
-    }
-
-    final url = Uri.parse('$_baseUrl/api/v1/runs/');
-
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: runData.toJson(),
-    );
-
-    if (response.statusCode != 200) {
-      print('Error Body: ${response.body}');
-      throw Exception('Failed to create run');
-    }
-  }
-
-  // 러닝 상세 기록 요청 함수
-  static Future<Run> getRunDetail(String runId) async {
-    final token = await SecureStorageService().readToken();
-    if (token == null) {
-      throw Exception('Token not found');
-    }
-
-    final url = Uri.parse('$_baseUrl/api/v1/runs/$runId');
-
-    final response = await http.get(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      return Run.fromJson(data);
-    } else {
-      throw Exception('Failed to load run detail');
-    }
-  }
-
-  // 프로필 수정 요청 함수
-  static Future<User> updateUserProfile(String nickname) async {
-    final token = await SecureStorageService().readToken();
-    if (token == null) {
-      throw Exception('Token not found');
-    }
-
     final url = Uri.parse('$_baseUrl/api/v1/users/me');
-
     final response = await http.patch(
       url,
       headers: {
@@ -158,12 +63,125 @@ class ApiService {
       },
       body: jsonEncode({'nickname': nickname}),
     );
-
     if (response.statusCode == 200) {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      return User.fromJson(data);
+      return User.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     } else {
       throw Exception('Failed to update profile');
+    }
+  }
+
+  // --- 러닝 기록 관련 API ---
+
+  static Future<Run> createRun() async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) throw Exception('Token not found');
+    final url = Uri.parse('$_baseUrl/api/v1/runs/');
+    final response = await http.post(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return Run.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    } else {
+      throw Exception('Failed to create run');
+    }
+  }
+
+  static Future<List<Run>> getRuns() async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) throw Exception('Token not found');
+    final url = Uri.parse('$_baseUrl/api/v1/runs/');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((json) => Run.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load runs');
+    }
+  }
+
+  static Future<Run> getRunDetail(String runId) async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) throw Exception('Token not found');
+    final url = Uri.parse('$_baseUrl/api/v1/runs/$runId');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return Run.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    } else {
+      throw Exception('Failed to load run detail');
+    }
+  }
+
+  static Future<Run> updateRunDetails(String runId, RunEdit runData) async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) throw Exception('Token not found');
+
+    final url = Uri.parse('$_baseUrl/api/v1/runs/$runId');
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: runData.toJson(),
+    );
+
+    if (response.statusCode == 200) {
+      return Run.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    } else {
+      throw Exception('Failed to update run details');
+    }
+  }
+
+  static Future<Run> updateRun(String runId, RunUpdate runData) async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) throw Exception('Token not found');
+
+    final url = Uri.parse('$_baseUrl/api/v1/runs/$runId');
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: runData.toJson(), // RunUpdate 객체를 그대로 사용합니다.
+    );
+
+    if (response.statusCode == 200) {
+      return Run.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    } else {
+      print('Error Body: ${response.body}');
+      throw Exception('Failed to update run');
+    }
+  }
+
+  static Future<void> deleteRun(String runId) async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) throw Exception('Token not found');
+    final url = Uri.parse('$_baseUrl/api/v1/runs/$runId');
+    final response = await http.delete(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete run');
+    }
+  }
+
+  Future<List<Post>> getPosts() async {
+    final url = Uri.parse('$_baseUrl/api/v1/posts/');
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((json) => Post.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load posts');
     }
   }
 }

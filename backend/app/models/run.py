@@ -1,8 +1,9 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime, Float, ForeignKey, Integer
+from sqlalchemy import Column, String, Boolean, DateTime, Float, ForeignKey, Integer, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+
 
 from app.db.session import Base
 
@@ -14,7 +15,8 @@ class Run(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    
+    title = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
     distance = Column(Float, nullable=False) # 미터(m) 단위
     duration = Column(Float, nullable=False) # 초(s) 단위
     
@@ -28,7 +30,7 @@ class Run(Base):
     avg_heart_rate = Column(Integer, nullable=True)
     avg_cadence = Column(Integer, nullable=True)
     total_elevation_gain = Column(Float, nullable=True)
-    
+    status = Column(String, default="finished", nullable=False)
     # 구간별 기록을 JSON 형태로 저장합니다.
     # 예: [{"split": 1, "pace": 330.5, "elevation": 10.2, ...}]
     splits = Column(JSONB, nullable=True)

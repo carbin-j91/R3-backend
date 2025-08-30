@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'package:intl/intl.dart';
+import 'package:mobile/l10n/app_strings.dart'; // 1. 다국어 지원을 위해 AppStrings를 가져옵니다.
 import 'package:mobile/models/run.dart';
+import 'package:mobile/screens/edit_run_screen.dart'; // 2. 수정 화면을 가져옵니다.
 import 'package:mobile/services/api_service.dart';
+import 'package:mobile/utils/format_utils.dart'; // 3. 포맷팅 도구를 가져옵니다.
+import 'package:mobile/widgets/run_detail_widget.dart';
 
 class RunDetailScreen extends StatefulWidget {
-  final String runId; // 이전 화면에서 전달받을 러닝 기록 ID
+  final String runId;
 
   const RunDetailScreen({super.key, required this.runId});
 
@@ -19,135 +22,105 @@ class _RunDetailScreenState extends State<RunDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // 위젯이 생성될 때 전달받은 ID로 상세 기록을 불러옵니다.
-    _runDetailFuture = ApiService.getRunDetail(widget.runId);
+    _loadRunDetails();
+  }
+
+  // 데이터를 다시 불러와 화면을 새로고침하는 함수
+  void _loadRunDetails() {
+    setState(() {
+      _runDetailFuture = ApiService.getRunDetail(widget.runId);
+    });
+  }
+
+  // 삭제 버튼을 눌렀을 때 실행될 함수
+  Future<void> _deleteRun() async {
+    final bool? confirmed = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(AppStrings.deleteConfirmTitle),
+        content: const Text(AppStrings.deleteConfirmContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(AppStrings.runCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(AppStrings.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await ApiService.deleteRun(widget.runId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppStrings.runDeleteSuccess)),
+        );
+        Navigator.of(context).pop(true); // 목록 화면으로 돌아가서 새로고침하도록 true 전달
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppStrings.runDeleteFailed)),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('러닝 상세 기록')),
+      appBar: AppBar(
+        title: const Text(AppStrings.runDetailTitle),
+        // ----> 4. AppBar 오른쪽에 '더보기' 메뉴를 추가합니다. <----
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'edit') {
+                final run = await _runDetailFuture;
+                if (run != null && mounted) {
+                  final result = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (context) => EditRunScreen(run: run),
+                    ),
+                  );
+                  // 수정 화면에서 true를 돌려받으면, 상세 화면을 새로고침합니다.
+                  if (result == true) {
+                    _loadRunDetails();
+                  }
+                }
+              } else if (value == 'delete') {
+                _deleteRun();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'edit',
+                child: Text(AppStrings.edit),
+              ),
+              const PopupMenuItem<String>(
+                value: 'delete',
+                child: Text(AppStrings.delete),
+              ),
+            ],
+          ),
+        ],
+      ),
       body: FutureBuilder<Run>(
         future: _runDetailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return Center(child: Text('기록을 불러오는 데 실패했습니다: ${snapshot.error}'));
+          if (snapshot.hasError || !snapshot.hasData) {
+            return const Center(child: Text('기록을 불러오는 데 실패했습니다.'));
           }
-          if (snapshot.hasData) {
-            final run = snapshot.data!;
-            final routePoints = (run.route ?? [])
-                .map((p) => NLatLng(p['lat'], p['lng']))
-                .toList();
 
-            return Column(
-              children: [
-                // 1. 지도 영역
-                Expanded(
-                  flex: 1,
-                  child: NaverMap(
-                    options: NaverMapViewOptions(
-                      initialCameraPosition: NCameraPosition(
-                        target: routePoints.isNotEmpty
-                            ? routePoints.first
-                            : const NLatLng(37.5665, 126.9780),
-                        zoom: 15,
-                      ),
-                    ),
-                    onMapReady: (controller) {
-                      if (routePoints.isNotEmpty) {
-                        // 경로가 보이도록 카메라 위치 조정
-                        controller.updateCamera(
-                          NCameraUpdate.fitBounds(
-                            NLatLngBounds.from(routePoints),
-                            padding: const EdgeInsets.all(50),
-                          ),
-                        );
-                        // 지도 위에 경로 표시
-                        controller.addOverlay(
-                          NPolylineOverlay(
-                            id: 'path',
-                            coords: routePoints,
-                            color: Colors.blueAccent,
-                            width: 5,
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-                // 2. 상세 기록 정보 영역
-                Expanded(flex: 1, child: _buildStatsInfo(run)),
-              ],
-            );
-          }
-          return const Center(child: Text('기록을 찾을 수 없습니다.'));
+          final run = snapshot.data!;
+          // 이제 RunDetailWidget을 사용합니다.
+          return RunDetailWidget(run: run);
         },
       ),
-    );
-  }
-
-  // 상세 기록 정보를 보여주는 위젯
-  Widget _buildStatsInfo(Run run) {
-    // 평균 페이스 계산
-    final paceInSeconds = run.distance > 0
-        ? (run.duration / (run.distance / 1000))
-        : 0;
-    final paceMinutes = (paceInSeconds / 60).floor();
-    final paceSeconds = (paceInSeconds % 60).round();
-    final avgPaceFormatted =
-        '${paceMinutes.toString().padLeft(2, '0')}\'${paceSeconds.toString().padLeft(2, '0')}"';
-
-    // 시간 포맷팅
-    final durationFormatted =
-        '${(run.duration ~/ 60).toString().padLeft(2, '0')}:${(run.duration.toInt() % 60).toString().padLeft(2, '0')}';
-
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatColumn(
-                '거리',
-                '${(run.distance / 1000).toStringAsFixed(2)} km',
-              ),
-              _buildStatColumn('시간', durationFormatted),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatColumn('평균 페이스', avgPaceFormatted),
-              _buildStatColumn(
-                '날짜',
-                DateFormat('yyyy.MM.dd').format(run.createdAt.toLocal()),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 통계 표시용 위젯
-  Widget _buildStatColumn(String title, String value) {
-    return Column(
-      children: [
-        Text(
-          title,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 28),
-        ),
-      ],
     );
   }
 }

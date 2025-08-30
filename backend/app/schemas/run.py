@@ -7,6 +7,8 @@ class RunBase(BaseModel):
     """
     Run 스키마의 공통 속성을 정의하는 기본 클래스입니다.
     """
+    title: Optional[str] = None
+    notes: Optional[str] = None
     distance: float
     duration: float
     route: Optional[List[Any]] = None
@@ -19,18 +21,18 @@ class RunBase(BaseModel):
     total_elevation_gain: Optional[float] = None
     splits: Optional[List[Any]] = None
 
-class RunCreate(RunBase):
+
+class RunCreate(BaseModel):
     """
     새로운 러닝 기록을 생성할 때 사용할 스키마입니다.
     """
     pass
 
 class RunUpdate(BaseModel):
-    """
-    러닝 기록을 수정할 때 사용할 스키마입니다.
-    (지금은 사용하지 않지만, 향후 확장을 위해 남겨둡니다.)
-    """
-    pass
+    # ----> RunUpdate 스키마를 수정합니다. <----
+    # 이제 제목과 메모만 수정할 수 있도록 허용합니다.
+    title: Optional[str] = None
+    notes: Optional[str] = None
 
 class Run(RunBase):
     """

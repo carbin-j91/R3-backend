@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -16,10 +18,22 @@ class _MapScreenState extends State<MapScreen> {
   Position? _currentPosition;
   String? _errorMessage;
 
+  // ----> 1. 카운트다운을 위한 상태 변수들을 추가합니다. <----
+  bool _isCountingDown = false;
+  String _countdownText = '';
+  Timer? _countdownTimer;
+
   @override
   void initState() {
     super.initState();
     _initializeLocation();
+  }
+
+  // 위젯 사라질 때 타이머를 꼭 종료
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _initializeLocation() async {
@@ -69,6 +83,40 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  void _startCountdown() {
+    if (_isCountingDown || _currentPosition == null) return;
+
+    int count = 3;
+    setState(() {
+      _isCountingDown = true;
+      _countdownText = count.toString();
+    });
+
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (count > 1) {
+        count--;
+        setState(() {
+          _countdownText = count.toString();
+        });
+      } else {
+        setState(() {
+          _countdownText = AppStrings.countdownGo;
+        });
+        // 'GO!'를 1초간 보여준 후, 러닝 화면으로 이동
+        Future.delayed(const Duration(seconds: 1), () {
+          timer.cancel();
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const RunningStatsScreen(),
+              ),
+            );
+          }
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,50 +139,58 @@ class _MapScreenState extends State<MapScreen> {
                     zoom: 16,
                   ),
                   locationButtonEnable: true,
+                  rotationGesturesEnable: true, // 회전 제스처 허
                 ),
                 onMapReady: (controller) {
                   _mapController = controller;
                 },
               ),
 
-            // ---- 여기에 원형 이미지 버튼 추가 ----
+            // 하단 '러닝 시작' 버튼 또는 카운트다운
             Positioned(
-              bottom: 20, // SafeArea 안쪽을 기준으로 여백 설정
+              bottom: 20,
               left: 0,
               right: 0,
               child: Center(
-                // 버튼을 중앙에 배치
                 child: GestureDetector(
-                  onTap: _currentPosition == null
-                      ? null
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const RunningStatsScreen(),
-                            ),
-                          );
-                        },
+                  onTap: _startCountdown,
                   child: Container(
-                    width: 120, // 버튼의 크기
-                    height: 120, // 버튼의 크기
+                    width: 120,
+                    height: 120,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle, // 원형으로 만듭니다.
+                      shape: BoxShape.circle,
                       boxShadow: [
-                        // 그림자 효과
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black.withValues(alpha: 0.3),
                           spreadRadius: 2,
                           blurRadius: 7,
                           offset: const Offset(0, 3),
                         ),
                       ],
-                      image: const DecorationImage(
-                        image: AssetImage(
-                          'assets/images/app_icon.png',
-                        ), // 여기에 앱 아이콘 이미지 경로를 사용합니다.
-                        fit: BoxFit.cover,
-                      ),
+                      // 4. 카운트다운 상태에 따라 다른 UI를 보여줍니다.
+                      image: !_isCountingDown
+                          ? const DecorationImage(
+                              image: AssetImage('assets/images/app_icon.png'),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      color: _isCountingDown
+                          ? Colors.black.withValues(alpha: 0.7)
+                          : null,
                     ),
+                    // 카운트다운 텍스트
+                    child: _isCountingDown
+                        ? Center(
+                            child: Text(
+                              _countdownText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 50,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : null,
                   ),
                 ),
               ),

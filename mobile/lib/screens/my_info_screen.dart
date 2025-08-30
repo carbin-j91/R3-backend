@@ -1,16 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/l10n/app_strings.dart';
-import 'package:mobile/screens/my_runs_screen.dart';
+import 'package:mobile/login_screen.dart'; // 로그인 화면을 가져옵니다.
 import 'package:mobile/screens/my_profile_screen.dart';
+import 'package:mobile/services/secure_storage_service.dart'; // 보안 저장소 서비스를 가져옵니다.
 
 class MyInfoScreen extends StatelessWidget {
   const MyInfoScreen({super.key});
 
+  // 1. 로그아웃 버튼을 눌렀을 때 실행될 함수를 추가합니다.
+  Future<void> _handleLogout(BuildContext context) async {
+    // 안전한 금고에서 토큰을 삭제합니다.
+    await SecureStorageService().deleteToken();
+
+    // 로그인 화면으로 이동시키고, 이전의 모든 화면 기록을 삭제합니다.
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.tabMyInfo)),
-      // ----> body 부분을 아래와 같이 수정합니다. <----
+      appBar: AppBar(
+        title: const Text(AppStrings.tabMyInfo),
+        // ----> 2. AppBar 오른쪽에 actions를 추가하여 로그아웃 버튼을 만듭니다. <----
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => _handleLogout(context), // 로그아웃 함수 호출
+            tooltip: '로그아웃',
+          ),
+        ],
+      ),
       body: ListView(
         children: [
           _buildMenuTile(
@@ -25,7 +49,6 @@ class MyInfoScreen extends StatelessWidget {
               );
             },
           ),
-          // '러닝 기록'과 '내 앨범' 메뉴는 RecordScreen으로 이동했으므로 삭제합니다.
           _buildMenuTile(
             context,
             icon: Icons.article_outlined,

@@ -5,11 +5,11 @@ import uuid
 
 from app import models, schemas
 
-async def create_run(db: AsyncSession, run: schemas.RunCreate, user_id: uuid.UUID) -> models.Run:
+async def create_run(db: AsyncSession, user_id: uuid.UUID) -> models.Run:
     """
-    특정 사용자를 위해 새로운 러닝 기록을 데이터베이스에 생성합니다.
+    'running' 상태의 비어있는 임시 러닝 기록을 생성합니다.
     """
-    db_run = models.Run(**run.model_dump(), user_id=user_id)
+    db_run = models.Run(user_id=user_id, status="running", distance=0, duration=0)
     db.add(db_run)
     await db.commit()
     await db.refresh(db_run)
@@ -40,15 +40,11 @@ async def get_run(db: AsyncSession, id: uuid.UUID, user_id: uuid.UUID) -> models
 
 async def update_run(db: AsyncSession, db_run: models.Run, run_in: schemas.RunUpdate) -> models.Run:
     """
-    러닝 기록을 수정합니다.
+    기존 러닝 기록을 업데이트합니다. (중간 저장 및 최종 저장에 사용)
     """
-    # run_in 스키마에서 받은 데이터 중, 값이 설정된(None이 아닌) 필드만 가져옵니다.
     update_data = run_in.model_dump(exclude_unset=True)
-    
-    # db_run 객체의 필드를 새로운 값으로 업데이트합니다.
     for key, value in update_data.items():
         setattr(db_run, key, value)
-        
     db.add(db_run)
     await db.commit()
     await db.refresh(db_run)

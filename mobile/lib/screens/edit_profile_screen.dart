@@ -36,7 +36,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      await ApiService.updateUserProfile(_nicknameController.text);
+      await ApiService.updateUserProfile(nickname: _nicknameController.text);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

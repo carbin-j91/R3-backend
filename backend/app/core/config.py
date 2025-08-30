@@ -18,7 +18,7 @@ class Settings:
     JWT_ALGORITHM: str = "HS256"
 
     # 액세스 토큰의 만료 시간을 설정합니다. (예: 30분)
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
 
 # 설정 클래스의 인스턴스를 생성하여 다른 파일에서 쉽게 가져다 쓸 수 있도록 합니다.
 settings = Settings()

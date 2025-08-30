@@ -87,6 +87,7 @@ class AppStrings {
   static const String locationPermissionDenied =
       '위치 권한이 거부되어 이 기능을 사용할 수 없습니다.';
   // 러닝 컨트롤
+  static const String countdownGo = 'GO!';
   static const String runPause = '일시정지';
   static const String runResume = '다시시작';
   static const String runFinish = '종료';
@@ -94,16 +95,44 @@ class AppStrings {
   static const String runFinishConfirmContent = '현재 기록을 저장하시겠습니까?';
   static const String runSave = '저장';
   static const String runCancel = '취소';
-
+  static const String longPressToFinish = '종료하려면 길게 누르세요';
+  // 러닝 종료 확인
+  static const String runExitConfirmTitle = '러닝 종료 확인';
+  static const String runExitConfirmContent = '러닝을 정말로 종료하시겠습니까?';
+  static const String runExitConfirmYes = '종료';
+  static const String runExitConfirmNo = '계속하기';
+  //러닝 결과 화면
+  static const String viewDetails = '상세히 보기';
   // 구간 기록 페이지
   static const String splitsHeaderKm = '구간 (km)';
   static const String splitsHeaderPace = '페이스';
   static const String splitsHeaderTime = '시간';
+  static const String runCadence = '케이던스';
   static const String runElevation = '고도 상승';
+  static const String splitsEmpty = '1km 이상 달려 구간 기록을 확인해보세요.';
+  // 구간 기록 페이지 헤더
+  static const String splitsHeaderElevation = '고도';
+  static const String splitsHeaderCadence = '케이던스';
+
   // 프로필 수정 화면
   static const String editProfileTitle = '프로필 수정';
   static const String saveChanges = '변경사항 저장';
   static const String nicknameHint = '새로운 닉네임을 입력하세요';
   static const String profileUpdateSuccess = '프로필이 성공적으로 업데이트되었습니다.';
   static const String profileUpdateFailed = '프로필 업데이트에 실패했습니다.';
+
+  // 러닝 상세/수정
+  static const String runDetailTitle = '러닝 상세 기록';
+  static const String editRunTitle = '러닝 기록 수정';
+  static const String edit = '수정하기';
+  static const String delete = '삭제하기';
+  static const String deleteConfirmTitle = '기록 삭제';
+  static const String deleteConfirmContent =
+      '이 러닝 기록을 정말로 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.';
+  static const String runTitleLabel = '제목';
+  static const String runNotesLabel = '메모';
+  static const String runUpdateSuccess = '기록이 성공적으로 업데이트되었습니다.';
+  static const String runUpdateFailed = '기록 업데이트에 실패했습니다.';
+  static const String runDeleteSuccess = '기록이 삭제되었습니다.';
+  static const String runDeleteFailed = '기록 삭제에 실패했습니다.';
 }
