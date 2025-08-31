@@ -1,18 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/l10n/app_strings.dart';
-import 'package:mobile/login_screen.dart'; // 로그인 화면을 가져옵니다.
+import 'package:mobile/login_screen.dart';
+import 'package:mobile/models/user.dart'; // User 모델을 가져옵니다.
 import 'package:mobile/screens/my_profile_screen.dart';
-import 'package:mobile/services/secure_storage_service.dart'; // 보안 저장소 서비스를 가져옵니다.
+import 'package:mobile/services/api_service.dart'; // ApiService를 가져옵니다.
+import 'package:mobile/services/secure_storage_service.dart';
 
-class MyInfoScreen extends StatelessWidget {
+// Drawer의 내용물이 동적으로 변해야 하므로 StatefulWidget으로 변경합니다.
+class MyInfoScreen extends StatefulWidget {
   const MyInfoScreen({super.key});
 
-  // 1. 로그아웃 버튼을 눌렀을 때 실행될 함수를 추가합니다.
-  Future<void> _handleLogout(BuildContext context) async {
-    // 안전한 금고에서 토큰을 삭제합니다.
-    await SecureStorageService().deleteToken();
+  @override
+  State<MyInfoScreen> createState() => _MyInfoScreenState();
+}
 
-    // 로그인 화면으로 이동시키고, 이전의 모든 화면 기록을 삭제합니다.
+class _MyInfoScreenState extends State<MyInfoScreen> {
+  Future<User>? _userProfileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // 서랍이 열릴 때마다 사용자 정보를 새로고침할 수 있도록 initState에서 호출
+    _userProfileFuture = ApiService.getUserProfile();
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    await SecureStorageService().deleteToken();
     if (context.mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -23,25 +36,57 @@ class MyInfoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppStrings.tabMyInfo),
-        // ----> 2. AppBar 오른쪽에 actions를 추가하여 로그아웃 버튼을 만듭니다. <----
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _handleLogout(context), // 로그아웃 함수 호출
-            tooltip: '로그아웃',
-          ),
-        ],
-      ),
-      body: ListView(
+    // Drawer 위젯으로 전체를 감싸 서랍임을 명시합니다.
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero, // 상단 여백 제거
         children: [
+          // 1. 사용자 프로필 정보를 보여주는 헤더
+          FutureBuilder<User>(
+            future: _userProfileFuture,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                final user = snapshot.data!;
+                return UserAccountsDrawerHeader(
+                  accountName: Text(
+                    user.nickname ?? 'Nickname',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  accountEmail: Text(user.email ?? 'email@example.com'),
+                  currentAccountPicture: const CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.person,
+                      size: 40,
+                      color: Colors.blueAccent,
+                    ),
+                  ),
+                  decoration: const BoxDecoration(color: Colors.blueAccent),
+                );
+              }
+              // 로딩 중이거나 에러 발생 시 기본 헤더 표시
+              return const UserAccountsDrawerHeader(
+                accountName: Text('Loading...'),
+                accountEmail: Text(''),
+                currentAccountPicture: CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: CircularProgressIndicator(),
+                ),
+                decoration: BoxDecoration(color: Colors.blueAccent),
+              );
+            },
+          ),
+
+          // 2. 메뉴 목록
           _buildMenuTile(
             context,
             icon: Icons.person_outline,
             title: AppStrings.myProfile,
             onTap: () {
+              Navigator.of(context).pop(); // 서랍을 먼저 닫습니다.
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => const MyProfileScreen(),
@@ -54,15 +99,21 @@ class MyInfoScreen extends StatelessWidget {
             icon: Icons.article_outlined,
             title: AppStrings.myPosts,
             onTap: () {
-              // TODO: 나의 글 페이지로 이동
+              /* TODO: 나의 글 페이지로 이동 */
             },
+          ),
+          const Divider(),
+          _buildMenuTile(
+            context,
+            icon: Icons.logout,
+            title: '로그아웃',
+            onTap: () => _handleLogout(context),
           ),
         ],
       ),
     );
   }
 
-  // 메뉴 타일을 만드는 공통 위젯
   Widget _buildMenuTile(
     BuildContext context, {
     required IconData icon,
@@ -72,7 +123,6 @@ class MyInfoScreen extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: Colors.grey.shade600),
       title: Text(title, style: const TextStyle(fontSize: 16)),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
     );
   }

@@ -3,7 +3,6 @@ import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/schemas/run_update_schema.dart'; // RunUpdate 스키마 import
 import 'package:mobile/services/api_service.dart';
-import 'package:mobile/schemas/run_edit_schema.dart';
 
 class EditRunScreen extends StatefulWidget {
   final Run run;
@@ -35,13 +34,13 @@ class _EditRunScreenState extends State<EditRunScreen> {
   Future<void> _saveRun() async {
     setState(() => _isLoading = true);
     try {
-      // 1. RunEdit 객체를 생성합니다.
-      final runDataToEdit = RunEdit(
+      // 1. title과 notes만 포함된 RunUpdate 객체를 생성합니다.
+      final runDataToUpdate = RunUpdate(
         title: _titleController.text,
         notes: _notesController.text,
       );
-      // 2. ApiService.updateRunDetails를 올바른 방식으로 호출합니다.
-      await ApiService.updateRunDetails(widget.run.id, runDataToEdit);
+      // 2. ApiService.updateRun을 올바른 방식으로 호출합니다.
+      await ApiService.updateRun(widget.run.id, runDataToUpdate);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

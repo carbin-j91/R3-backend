@@ -6,15 +6,8 @@ import 'package:mobile/models/run.dart';
 import 'package:mobile/models/post.dart';
 import 'package:mobile/schemas/run_update_schema.dart';
 import 'package:mobile/services/secure_storage_service.dart';
-import 'package:mobile/schemas/run_edit_schema.dart';
 
 class ApiService {
-  // ngrok을 사용하지 않을 때는 이 주석을 풀고, 아래 const 주석 처리
-  // static final String _baseUrl = kIsWeb
-  //     ? 'http://localhost:8000'
-  //     : 'http://192.168.x.x:8000'; // 실제 IP 주소로 변경
-
-  // ngrok을 사용할 때의 주소
   static const String _baseUrl = 'https://327cd56ed4ac.ngrok-free.app';
 
   // --- 사용자 관련 API ---
@@ -58,15 +51,11 @@ class ApiService {
   }) async {
     final token = await SecureStorageService().readToken();
     if (token == null) throw Exception('Token not found');
-
     final url = Uri.parse('$_baseUrl/api/v1/users/me');
-
-    // 보낼 데이터만 필터링하여 body를 구성합니다.
     final Map<String, dynamic> body = {};
     if (nickname != null) body['nickname'] = nickname;
     if (height != null) body['height'] = height;
     if (weight != null) body['weight'] = weight;
-
     final response = await http.patch(
       url,
       headers: {
@@ -75,13 +64,13 @@ class ApiService {
       },
       body: jsonEncode(body),
     );
-
     if (response.statusCode == 200) {
       return User.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     } else {
       throw Exception('Failed to update profile');
     }
   }
+
   // --- 러닝 기록 관련 API ---
 
   static Future<Run> createRun() async {
@@ -130,46 +119,33 @@ class ApiService {
     }
   }
 
-  static Future<Run> updateRunDetails(String runId, RunEdit runData) async {
-    final token = await SecureStorageService().readToken();
-    if (token == null) throw Exception('Token not found');
-
-    final url = Uri.parse('$_baseUrl/api/v1/runs/$runId');
-    final response = await http.patch(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: runData.toJson(),
-    );
-
-    if (response.statusCode == 200) {
-      return Run.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
-    } else {
-      throw Exception('Failed to update run details');
-    }
-  }
-
+  // ----> updateRun 함수를 이 하나의 버전으로 최종 통일합니다. <----
   static Future<Run> updateRun(String runId, RunUpdate runData) async {
     final token = await SecureStorageService().readToken();
     if (token == null) throw Exception('Token not found');
 
     final url = Uri.parse('$_baseUrl/api/v1/runs/$runId');
+    final payload = runData.toJson();
+
+    debugPrint('[RUN PATCH] /runs/$runId');
+    debugPrint('[RUN PATCH PAYLOAD] ${jsonEncode(payload)}');
+
     final response = await http.patch(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: runData.toJson(), // RunUpdate 객체를 그대로 사용합니다.
+      body: jsonEncode(payload),
     );
+
+    debugPrint('[RUN PATCH RES] code=${response.statusCode}');
+    debugPrint('[RUN PATCH RES BODY] ${response.body}');
 
     if (response.statusCode == 200) {
       return Run.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     } else {
-      print('Error Body: ${response.body}');
-      throw Exception('Failed to update run');
+      throw Exception('Failed to update run: ${response.statusCode}');
     }
   }
 
@@ -185,6 +161,8 @@ class ApiService {
       throw Exception('Failed to delete run');
     }
   }
+
+  // --- 게시글 관련 API ---
 
   Future<List<Post>> getPosts() async {
     final url = Uri.parse('$_baseUrl/api/v1/posts/');

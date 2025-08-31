@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/l10n/app_strings.dart';
-import 'package:mobile/screens/my_info_screen.dart';
-import 'package:mobile/screens/map_screen.dart'; // 1. running_screen 대신 map_screen을 가져옵니다.
+import 'package:mobile/screens/map_screen.dart'; // 러닝 시작(지도) 화면
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -11,25 +10,30 @@ class HomeScreen extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text(AppStrings.appName),
-          leading: IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const MyInfoScreen()),
-              );
-            },
-          ),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: AppStrings.homeTabMain),
-              Tab(text: AppStrings.homeTabRanking),
-              Tab(text: AppStrings.homeTabAds),
+        // ----> AppBar를 완전히 제거했습니다. <----
+        body: SafeArea(
+          child: Column(
+            children: [
+              // 1. 상단 탭바만 남겨둡니다.
+              const TabBar(
+                tabs: [
+                  Tab(text: AppStrings.homeTabMain),
+                  Tab(text: AppStrings.homeTabRanking),
+                  Tab(text: AppStrings.homeTabAds),
+                ],
+                labelColor: Colors.blueAccent,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.blueAccent,
+              ),
+              // 2. 탭바 아래의 내용
+              const Expanded(
+                child: TabBarView(
+                  children: [MainTab(), RankingTab(), AdsTab()],
+                ),
+              ),
             ],
           ),
         ),
-        body: const TabBarView(children: [MainTab(), RankingTab(), AdsTab()]),
       ),
     );
   }

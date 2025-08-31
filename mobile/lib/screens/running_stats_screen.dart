@@ -20,6 +20,7 @@ class RunningStatsScreen extends StatefulWidget {
 }
 
 class _RunningStatsScreenState extends State<RunningStatsScreen> {
+  // --- 상태 변수 선언 ---
   String? _runId;
   bool _isLoading = true;
   bool _isRunning = false;
@@ -36,6 +37,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   Timer? _timer;
   double _totalCalories = 0.0;
 
+  // 1. final 키워드를 모두 제거하여 값을 변경할 수 있도록 합니다.
   int _stepCount = 0;
   int _currentCadence = 0;
   double _lastMagnitude = 0.0;
@@ -59,7 +61,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeTtsAndStartRun();
+    _initializeTtsAndStartRun(); // TTS 초기화와 러닝 시작을 함께 처리
   }
 
   @override
@@ -72,10 +74,12 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     super.dispose();
   }
 
+  // --- 핵심 로직 함수들 ---
+
   Future<void> _initializeTtsAndStartRun() async {
     await _flutterTts.setLanguage("ko-KR");
     await _flutterTts.setSpeechRate(0.5);
-    _startNewRun();
+    await _startNewRun();
   }
 
   Future<void> _startNewRun() async {
@@ -94,16 +98,14 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     }
   }
 
-  void _manualPauseRunning() async {
+  void _manualPauseRunning() {
     if (!_isRunning) return;
-    _speak(AppStrings.ttsRunPaused);
     _stopTracking();
     _stopTimer();
     setState(() {
       _isRunning = false;
       _isAutoPaused = false;
     });
-    await _updateRunOnServer(status: "paused");
   }
 
   void _resumeRunning() {
@@ -122,44 +124,32 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   }
 
   void _finishRunning() {
-    _speak(AppStrings.ttsRunFinished);
     _stopTracking();
     _stopTimer();
     if (mounted) setState(() => _isRunning = false);
+
     final runData = _createRunUpdateData();
+
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => RunResultScreen(
             runId: _runId!,
-            runData: runData,
-            onSave: () =>
-                _updateRunOnServer(status: "finished", runData: runData),
-            onDiscard: () =>
-                Navigator.of(context).popUntil((route) => route.isFirst),
+            initialRunData: runData, // <-- 이제 initialRunData로 전달합니다.
           ),
         ),
       );
     }
   }
 
-  Future<void> _updateRunOnServer({
-    required String status,
-    RunUpdate? runData,
-  }) async {
-    if (_runId == null) return;
-    final dataToUpdate = runData ?? _createRunUpdateData();
+  Future<bool> _saveRunToServer(RunUpdate runData) async {
+    if (_runId == null) return false;
     try {
-      await ApiService.updateRun(
-        _runId!,
-        dataToUpdate.copyWith(status: status),
-      );
-      print("기록 업데이트/저장 성공: status=$status");
-      if (status == 'finished' && mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+      // status를 'finished'로 설정하여 최종 저장합니다.
+      await ApiService.updateRun(_runId!, runData.copyWith(status: 'finished'));
+      return true;
     } catch (e) {
-      print("기록 업데이트 실패: $e");
+      return false;
     }
   }
 
@@ -189,7 +179,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   void _startTracking() {
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 10,
+      distanceFilter: 0,
     );
     _positionStream =
         Geolocator.getPositionStream(

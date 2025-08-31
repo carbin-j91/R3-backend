@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:mobile/l10n/app_strings.dart';
+import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:mobile/screens/home_screen.dart';
 import 'package:mobile/screens/explore_screen.dart';
 import 'package:mobile/screens/record_screen.dart';
 import 'package:mobile/screens/album_screen.dart';
 import 'package:mobile/screens/map_screen.dart';
+import 'package:mobile/screens/my_info_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,6 +20,8 @@ class _MainScreenState extends State<MainScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   late AnimationController _animationController;
+
+  final ValueNotifier<bool> _isDialOpen = ValueNotifier(false);
 
   final iconList = <IconData>[
     Icons.home,
@@ -47,50 +51,67 @@ class _MainScreenState extends State<MainScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _isDialOpen.dispose(); // 2. dispose도 잊지 않고 추가합니다.
     super.dispose();
   }
 
   void _onItemTapped(int index) {
+    // 3. 다른 탭을 누르면 SpeedDial을 닫습니다.
+    if (_isDialOpen.value) {
+      _isDialOpen.value = false;
+    }
     setState(() => _selectedIndex = index);
-    // 탭을 누를 때마다 아이콘이 살짝 커졌다가 돌아오는 효과
     _animationController.reverse().then((_) => _animationController.forward());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true, // body가 bottomNavigationBar 뒤로 확장되도록 함
-      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
-      // ----> 2. Stack을 사용하여 하단 바 위에 플로팅 버튼을 직접 배치합니다. <----
-      bottomNavigationBar: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          // 하단 바 배경
-          BottomAppBar(
-            shape: const CircularNotchedRectangle(),
-            notchMargin: 8.0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                _buildNavItem(icon: iconList[0], index: 0),
-                _buildNavItem(icon: iconList[1], index: 1),
-                const SizedBox(width: 60), // 중앙 버튼을 위한 공간
-                _buildNavItem(icon: iconList[2], index: 2),
-                _buildNavItem(icon: iconList[3], index: 3),
-              ],
+    return PopScope(
+      canPop: !_isDialOpen.value, // 메뉴가 열려있으면 뒤로가기(앱 종료)를 막습니다.
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) return;
+        // 뒤로가기가 막혔을 때, 메뉴가 열려있다면 닫아줍니다.
+        if (_isDialOpen.value) {
+          setState(() {
+            _isDialOpen.value = false;
+          });
+        }
+      },
+      child: Scaffold(
+        drawer: const MyInfoScreen(),
+        extendBody: true, // body가 bottomNavigationBar 뒤로 확장되도록 함
+        body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
+        // ----> 2. Stack을 사용하여 하단 바 위에 플로팅 버튼을 직접 배치합니다. <----
+        bottomNavigationBar: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            // 하단 바 배경
+            BottomAppBar(
+              shape: const CircularNotchedRectangle(),
+              notchMargin: 8.0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: <Widget>[
+                  _buildNavItem(icon: iconList[0], index: 0),
+                  _buildNavItem(icon: iconList[1], index: 1),
+                  const SizedBox(width: 60), // 중앙 버튼을 위한 공간
+                  _buildNavItem(icon: iconList[2], index: 2),
+                  _buildNavItem(icon: iconList[3], index: 3),
+                ],
+              ),
             ),
-          ),
-          // 중앙 퀵 스타트 버튼
-          Positioned(
-            // 3. 버튼의 높이를 하단 바와 거의 일치하도록 미세 조정합니다.
-            right:
-                MediaQuery.of(context).size.width / 2 -
-                (60 / 2) -
-                7, //예시: 중앙에서 10픽셀 우측으로 이동 (화면 너비 / 2) - (버튼 너비 / 2) + 이동량
-            bottom: MediaQuery.of(context).padding.bottom + 15,
-            child: _buildSpeedDial(),
-          ),
-        ],
+            // 중앙 퀵 스타트 버튼
+            Positioned(
+              // 3. 버튼의 높이를 하단 바와 거의 일치하도록 미세 조정합니다.
+              right:
+                  MediaQuery.of(context).size.width / 2 -
+                  (60 / 2) -
+                  7, //예시: 중앙에서 10픽셀 우측으로 이동 (화면 너비 / 2) - (버튼 너비 / 2) + 이동량
+              bottom: MediaQuery.of(context).padding.bottom + 15,
+              child: _buildSpeedDial(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -120,7 +141,7 @@ class _MainScreenState extends State<MainScreen>
                 icon,
                 color: _selectedIndex == index
                     ? Colors.blueAccent
-                    : Colors.grey,
+                    : Colors.blueAccent,
                 size: 28,
               ),
             ),
@@ -142,14 +163,15 @@ class _MainScreenState extends State<MainScreen>
   Widget _buildSpeedDial() {
     return SpeedDial(
       // ----> 2. 이 부분을 수정하여 버튼을 하단 바와 통합합니다. <----
-
       // 배경색과 그림자를 제거하여 떠 있는 느낌을 없앱니다.
+      openCloseDial: _isDialOpen,
+      // onOpen/onClose 콜백을 추가하여, 사용자가 배경을 탭했을 때도 상태가 동기화되도록 합니다.
+      onOpen: () => setState(() => _isDialOpen.value = true),
+      onClose: () => setState(() => _isDialOpen.value = false),
       backgroundColor: Colors.transparent,
       elevation: 0,
-
       // 렌더링 박스를 제거하여 다른 위젯처럼 보이게 합니다.
       renderOverlay: false,
-
       // 아이콘과 이미지
       buttonSize: const Size(60.0, 60.0),
       activeChild: const Icon(Icons.close),

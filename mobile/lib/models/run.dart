@@ -35,22 +35,31 @@ class Run {
     this.status,
   });
 
+  // --- 수정된 최종 팩토리 생성자 ---
   factory Run.fromJson(Map<String, dynamic> json) {
+    // 안전한 타입 변환을 위한 헬퍼 함수
+    double? toDouble(dynamic value) {
+      if (value is num) return value.toDouble();
+      return null;
+    }
+
     return Run(
       id: json['id'],
       userId: json['user_id'],
-      distance: (json['distance'] as num).toDouble(),
-      duration: (json['duration'] as num).toDouble(),
+      distance: toDouble(json['distance']) ?? 0.0,
+      duration: toDouble(json['duration']) ?? 0.0,
       createdAt: DateTime.parse(json['created_at']),
+
       title: json['title'],
       notes: json['notes'],
-      avgPace: (json['avg_pace'] as num?)?.toDouble(),
+      avgPace: toDouble(json['avg_pace']),
       route: json['route'],
-      caloriesBurned: (json['calories_burned'] as num?)?.toDouble(),
+      caloriesBurned: toDouble(json['calories_burned']),
       avgCadence: json['avg_cadence'],
-      totalElevationGain: (json['total_elevation_gain'] as num?)?.toDouble(),
+      totalElevationGain: toDouble(json['total_elevation_gain']),
       splits: json['splits'],
-      chartData: json['chartData'],
+      chartData:
+          json['chartData'], // 서버 모델에 chartData가 없으면 이 줄은 오류를 유발할 수 있습니다.
       status: json['status'],
     );
   }

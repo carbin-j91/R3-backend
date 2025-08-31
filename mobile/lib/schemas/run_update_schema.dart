@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 class RunUpdate {
+  final String? title;
+  final String? notes;
   final double? distance;
   final double? duration;
   final double? avgPace;
@@ -13,6 +15,8 @@ class RunUpdate {
   final String? status;
 
   RunUpdate({
+    this.title,
+    this.notes,
     this.distance,
     this.duration,
     this.avgPace,
@@ -27,6 +31,8 @@ class RunUpdate {
 
   RunUpdate copyWith({String? status}) {
     return RunUpdate(
+      title: title,
+      notes: notes,
       distance: distance,
       duration: duration,
       avgPace: avgPace,
@@ -40,18 +46,21 @@ class RunUpdate {
     );
   }
 
-  String toJson() {
-    return jsonEncode({
-      'distance': distance,
-      'duration': duration,
-      'avg_pace': avgPace,
-      'calories_burned': caloriesBurned,
-      'total_elevation_gain': totalElevationGain,
-      'avg_cadence': avgCadence,
-      'route': route,
-      'splits': splits,
-      'chartData': chartData,
-      'status': status,
-    });
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    if (title != null) data['title'] = title;
+    if (notes != null) data['notes'] = notes;
+    if (distance != null) data['distance'] = distance;
+    if (duration != null) data['duration'] = duration;
+    if (avgPace != null) data['avg_pace'] = avgPace;
+    if (caloriesBurned != null) data['calories_burned'] = caloriesBurned;
+    if (totalElevationGain != null)
+      data['total_elevation_gain'] = totalElevationGain;
+    if (avgCadence != null) data['avg_cadence'] = avgCadence;
+    if (route != null) data['route'] = route;
+    if (splits != null) data['splits'] = splits;
+    // chartData는 서버로 보내지 않습니다.
+    if (status != null) data['status'] = status;
+    return data;
   }
 }
