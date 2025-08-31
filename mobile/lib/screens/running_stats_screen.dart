@@ -10,6 +10,7 @@ import 'package:mobile/services/api_service.dart';
 import 'package:mobile/services/running_calculator_service.dart';
 import 'package:mobile/screens/run_result_screen.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class RunningStatsScreen extends StatefulWidget {
   const RunningStatsScreen({super.key});
@@ -19,15 +20,16 @@ class RunningStatsScreen extends StatefulWidget {
 }
 
 class _RunningStatsScreenState extends State<RunningStatsScreen> {
-  // --- 상태 변수 선언 (이전과 동일) ---
   String? _runId;
   bool _isLoading = true;
   bool _isRunning = false;
   bool _isAutoPaused = false;
   DateTime? _lastPositionTimestamp;
+
   NaverMapController? _mapController;
   StreamSubscription<Position>? _positionStream;
   StreamSubscription<UserAccelerometerEvent>? _accelerometerStream;
+
   final List<NLatLng> _routePoints = [];
   double _totalDistance = 0.0;
   int _elapsedSeconds = 0;
@@ -43,22 +45,21 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   int _lastSplitDistanceKm = 0;
   int _lastSplitTimeSeconds = 0;
   int _lastSplitStepCount = 0;
-  double _lastSplitElevation = 0.0;
+
   double _totalElevationGain = 0.0;
   Position? _lastPosition;
 
+  final List<Map<String, dynamic>> _chartData = [];
+  final FlutterTts _flutterTts = FlutterTts();
   final PageController _pageController = PageController();
   final RunningCalculatorService _calculator = RunningCalculatorService(
     userWeight: 65.0,
   );
 
-  // ----> 1. 차트 데이터를 위한 변수를 추가합니다. <----
-  final List<Map<String, dynamic>> _chartData = [];
-
   @override
   void initState() {
     super.initState();
-    _startNewRun();
+    _initializeTtsAndStartRun();
   }
 
   @override
@@ -67,10 +68,15 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     _accelerometerStream?.cancel();
     _timer?.cancel();
     _pageController.dispose();
+    _flutterTts.stop();
     super.dispose();
   }
 
-  // --- 핵심 로직 함수들 ---
+  Future<void> _initializeTtsAndStartRun() async {
+    await _flutterTts.setLanguage("ko-KR");
+    await _flutterTts.setSpeechRate(0.5);
+    _startNewRun();
+  }
 
   Future<void> _startNewRun() async {
     try {
@@ -80,7 +86,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
           _runId = newRun.id;
           _isLoading = false;
         });
-        _resumeRunning(); // _toggleRunningState 대신 _resumeRunning 호출
+        _resumeRunning();
       }
     } catch (e) {
       print("러닝 시작 실패: $e");
@@ -90,6 +96,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
 
   void _manualPauseRunning() async {
     if (!_isRunning) return;
+    _speak(AppStrings.ttsRunPaused);
     _stopTracking();
     _stopTimer();
     setState(() {
@@ -101,6 +108,11 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
 
   void _resumeRunning() {
     if (_isRunning) return;
+    if (_elapsedSeconds > 0) {
+      _speak(AppStrings.ttsRunResumed);
+    } else {
+      _speak(AppStrings.ttsRunStarted);
+    }
     setState(() {
       _isRunning = true;
       _isAutoPaused = false;
@@ -110,32 +122,11 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   }
 
   void _finishRunning() {
+    _speak(AppStrings.ttsRunFinished);
     _stopTracking();
     _stopTimer();
     if (mounted) setState(() => _isRunning = false);
-
-    final avgPace = _calculator.calculateAveragePace(
-      _totalDistance,
-      _elapsedSeconds,
-    );
-    final avgCadence = _elapsedSeconds > 0
-        ? (_stepCount / _elapsedSeconds * 60).round()
-        : 0;
-
-    final runData = RunUpdate(
-      distance: _totalDistance,
-      duration: _elapsedSeconds.toDouble(),
-      avgPace: avgPace,
-      caloriesBurned: _totalCalories,
-      totalElevationGain: _totalElevationGain,
-      avgCadence: avgCadence,
-      route: _routePoints
-          .map((p) => {'lat': p.latitude, 'lng': p.longitude})
-          .toList(),
-      splits: _splits,
-      chartData: _chartData, // <-- 차트 데이터를 추가합니다.
-    );
-
+    final runData = _createRunUpdateData();
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -191,87 +182,103 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
           .map((p) => {'lat': p.latitude, 'lng': p.longitude})
           .toList(),
       splits: _splits,
+      chartData: _chartData,
     );
   }
 
   void _startTracking() {
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 5,
+      distanceFilter: 10,
     );
     _positionStream =
-        Geolocator.getPositionStream(locationSettings: locationSettings).listen(
-          (Position position) {
-            if (mounted) {
-              // 2. 새로운 위치 정보가 들어올 때마다, 현재 시간을 기록합니다.
-              _lastPositionTimestamp = DateTime.now();
+        Geolocator.getPositionStream(
+          locationSettings: locationSettings,
+        ).listen((Position position) {
+          _lastPositionTimestamp = DateTime.now();
+          if (_isAutoPaused) _resumeRunning();
 
-              if (_isAutoPaused) {
-                // 자동 일시정지 상태였다면, 자동으로 다시 시작합니다.
-                _resumeRunning();
-              }
-              setState(() {
-                final newPoint = NLatLng(position.latitude, position.longitude);
-                if (_routePoints.isNotEmpty) {
-                  final lastPoint = _routePoints.last;
-                  final distanceDelta = Geolocator.distanceBetween(
-                    lastPoint.latitude,
-                    lastPoint.longitude,
-                    newPoint.latitude,
-                    newPoint.longitude,
-                  );
-                  _totalDistance += distanceDelta;
-                  if (_lastPosition != null &&
-                      position.altitude > _lastPosition!.altitude) {
-                    _totalElevationGain +=
-                        position.altitude - _lastPosition!.altitude;
-                  }
-                  final currentPace = _elapsedSeconds > 0
-                      ? _elapsedSeconds / (_totalDistance / 1000)
-                      : 0.0;
-                  // ----> 2. 매 순간의 데이터를 차트용 리스트에 저장합니다. <----
-                  _chartData.add({
-                    'time': _elapsedSeconds,
-                    'pace': currentPace,
-                    'lat': position.latitude,
-                    'lng': position.longitude,
-                  });
-                  _totalCalories += _calculator.calculateCaloriesForDistance(
-                    distanceDelta,
-                    currentPace,
-                  );
-                  // ----> 2. 구간별 기록 생성 로직을 수정합니다. <----
-                  final currentKm = (_totalDistance / 1000).floor();
-                  if (currentKm > _lastSplitDistanceKm) {
-                    final splitTime = _elapsedSeconds - _lastSplitTimeSeconds;
-                    final splitSteps = _stepCount - _lastSplitStepCount;
-                    final splitCadence = splitTime > 0
-                        ? (splitSteps / splitTime * 60).round()
-                        : 0;
-                    final splitElevationGain =
-                        _lastPosition != null &&
-                            position.altitude > _lastPosition!.altitude
-                        ? position.altitude - _lastPosition!.altitude
-                        : 0.0;
-                    _splits.add({
-                      'split': currentKm,
-                      'pace': splitTime.toDouble(),
-                      'time': splitTime,
-                      'cadence': splitCadence,
-                      'elevation': splitElevationGain,
-                    });
-                    _lastSplitDistanceKm = currentKm;
-                    _lastSplitTimeSeconds = _elapsedSeconds;
-                    _lastSplitStepCount = _stepCount;
-                    _lastSplitElevation = position.altitude;
-                  }
+          if (mounted) {
+            setState(() {
+              final newPoint = NLatLng(position.latitude, position.longitude);
+              if (_routePoints.isNotEmpty) {
+                final lastPoint = _routePoints.last;
+                final distanceDelta = Geolocator.distanceBetween(
+                  lastPoint.latitude,
+                  lastPoint.longitude,
+                  newPoint.latitude,
+                  newPoint.longitude,
+                );
+                _totalDistance += distanceDelta;
+                if (_lastPosition != null &&
+                    position.altitude > _lastPosition!.altitude) {
+                  _totalElevationGain +=
+                      position.altitude - _lastPosition!.altitude;
                 }
-                _routePoints.add(newPoint);
-                _lastPosition = position;
-              });
-            }
-          },
-        );
+                final currentPace = _elapsedSeconds > 0
+                    ? _elapsedSeconds / (_totalDistance / 1000)
+                    : 0.0;
+                _totalCalories += _calculator.calculateCaloriesForDistance(
+                  distanceDelta,
+                  currentPace,
+                );
+
+                _chartData.add({
+                  'time': _elapsedSeconds,
+                  'pace': currentPace,
+                  'lat': position.latitude,
+                  'lng': position.longitude,
+                  'distance': _totalDistance,
+                });
+
+                final currentKm = (_totalDistance / 1000).floor();
+                if (currentKm > _lastSplitDistanceKm) {
+                  final splitTime = _elapsedSeconds - _lastSplitTimeSeconds;
+                  final splitSteps = _stepCount - _lastSplitStepCount;
+                  final splitCadence = splitTime > 0
+                      ? (splitSteps / splitTime * 60).round()
+                      : 0;
+                  final splitElevationGain =
+                      _lastPosition != null &&
+                          position.altitude > _lastPosition!.altitude
+                      ? position.altitude - _lastPosition!.altitude
+                      : 0.0;
+                  _splits.add({
+                    'split': currentKm,
+                    'pace': splitTime.toDouble(),
+                    'time': splitTime,
+                    'cadence': splitCadence,
+                    'elevation': splitElevationGain,
+                  });
+                  _lastSplitDistanceKm = currentKm;
+                  _lastSplitTimeSeconds = _elapsedSeconds;
+                  _lastSplitStepCount = _stepCount;
+
+                  final totalDuration = Duration(seconds: _elapsedSeconds);
+                  final totalTimeFormatted =
+                      "${totalDuration.inMinutes}분 ${totalDuration.inSeconds % 60}초";
+                  final avgPace = _calculator.calculateAveragePace(
+                    _totalDistance,
+                    _elapsedSeconds,
+                  );
+                  final paceMinutes = (avgPace / 60).floor();
+                  final paceSeconds = (avgPace % 60).round();
+                  final avgPaceFormatted =
+                      "$paceMinutes분 ${paceSeconds.toString().padLeft(2, '0')}초";
+                  _speak(
+                    AppStrings.ttsSplitNotification(
+                      currentKm,
+                      totalTimeFormatted,
+                      avgPaceFormatted,
+                    ),
+                  );
+                }
+              }
+              _routePoints.add(newPoint);
+              _lastPosition = position;
+            });
+          }
+        });
 
     _accelerometerStream = userAccelerometerEventStream().listen((
       UserAccelerometerEvent event,
@@ -294,6 +301,10 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     });
   }
 
+  Future<void> _speak(String text) async {
+    await _flutterTts.speak(text);
+  }
+
   void _stopTracking() {
     _positionStream?.cancel();
     _accelerometerStream?.cancel();
@@ -310,19 +321,19 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
 
   void _stopTimer() => _timer?.cancel();
 
-  // 3. 새로운 자동 일시정지 감지 로직
   void _checkForAutoPause() {
     if (_isRunning && _lastPositionTimestamp != null) {
       final secondsSinceLastMove = DateTime.now()
           .difference(_lastPositionTimestamp!)
           .inSeconds;
-      if (secondsSinceLastMove >= 3) {
+      if (secondsSinceLastMove >= 10) {
+        _speak(AppStrings.ttsRunPaused);
         print("$secondsSinceLastMove초 동안 움직임 감지 안됨: 자동 일시정지");
         setState(() {
           _isRunning = false;
           _isAutoPaused = true;
         });
-        _stopTimer(); // 시간 흐름만 멈춤
+        _stopTimer();
       }
     }
   }

@@ -6,8 +6,11 @@ class AppStrings {
   static const String kakaoLogin = '카카오로 시작하기';
   static const String naverLogin = '네이버로 시작하기';
   static const String googleLogin = 'Google로 시작하기';
-
-  // ----> 아래 텍스트들을 추가합니다. <----
+  // 프로필 화면
+  static const String profileHeight = '키';
+  static const String profileWeight = '몸무게';
+  static const String heightHint = '키(cm)를 입력하세요';
+  static const String weightHint = '몸무게(kg)를 입력하세요';
 
   // 하단 탭
   static const String tabHome = '홈';
@@ -16,11 +19,11 @@ class AppStrings {
   static const String tabExplore = '탐색';
   static const String tabMyInfo = '내 정보';
 
-  // 생성(Create) 메뉴
-  static const String createRun = '러닝';
-  static const String createPost = '추천 글쓰기';
-  static const String createJournal = '일지쓰기';
-  static const String savePhoto = '사진저장';
+  // 플로팅 버튼 메뉴 (퀵 스타트)
+  static const String quickStartRun = '러닝 시작';
+  static const String quickStartWritePost = '추천 글쓰기';
+  static const String quickStartWriteJournal = '일지 쓰기';
+  static const String quickStartSavePhoto = '사진 저장';
 
   // 탐색 페이지 탭
   static const String exploreTabCourses = '도전 코스';
@@ -58,7 +61,7 @@ class AppStrings {
   static const String homeTabMain = '메인';
   static const String homeTabRanking = '랭킹';
   static const String homeTabAds = '광고';
-
+  static const String openMyInfo = '내 정보 보기';
   // 홈 화면 - 메인 탭
   static const String startRunning = '러닝 시작하기';
   static const String noticeArea = '공지사항이 표시될 공간입니다.';
@@ -91,6 +94,17 @@ class AppStrings {
   static const String runPause = '일시정지';
   static const String runResume = '다시시작';
   static const String runFinish = '종료';
+  // 음성 안내 (TTS)
+  // 음성 안내 (TTS)
+  static const String ttsRunStarted = '러닝을 시작합니다.';
+  static const String ttsRunPaused = '러닝을 일시정지합니다.';
+  static const String ttsRunResumed = '러닝을 다시 시작합니다.';
+  static const String ttsRunFinished = '러닝을 종료합니다.';
+
+  static String ttsSplitNotification(int km, String totalTime, String avgPace) {
+    return '거리 $km킬로미터, 총 시간 $totalTime, 평균 페이스 $avgPace';
+  }
+
   static const String runFinishConfirmTitle = '러닝 종료';
   static const String runFinishConfirmContent = '현재 기록을 저장하시겠습니까?';
   static const String runSave = '저장';
@@ -122,6 +136,7 @@ class AppStrings {
   static const String profileUpdateFailed = '프로필 업데이트에 실패했습니다.';
 
   // 러닝 상세/수정
+  static const String runNotes = '메모';
   static const String runDetailTitle = '러닝 상세 기록';
   static const String editRunTitle = '러닝 기록 수정';
   static const String edit = '수정하기';

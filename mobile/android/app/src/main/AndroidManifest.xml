@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
         android:label="mobile"
         android:name="${applicationName}"
@@ -23,6 +28,11 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
         <activity
             android:name="com.kakao.sdk.flutter.AuthCodeCustomTabsActivity"
             android:exported="true">
@@ -31,13 +41,14 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="kakao{ 30ec72a3186ed5a187a10dc4810acb03 }" android:host="oauth"/>
+                <data android:scheme="kakao30ec72a3186ed5a187a10dc4810acb03" android:host="oauth"/>
             </intent-filter>
         </activity>
         
         <meta-data
             android:name="com.kakao.sdk.AppKey"
-            android:value="{ 30ec72a3186ed5a187a10dc4810acb03 }"/>
+            android:value="30ec72a3186ed5a187a10dc4810acb03"/>
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

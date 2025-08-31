@@ -10,6 +10,8 @@ class UserBase(BaseModel):
     """
     email: EmailStr
     nickname: Optional[str] = None
+    height: Optional[float] = None
+    weight: Optional[float] = None
 
 class UserCreate(UserBase):
     """
@@ -42,6 +44,8 @@ class UserUpdate(BaseModel):
     모든 필드는 선택적으로 만듭니다.
     """
     nickname: Optional[str] = None
+    height: Optional[float] = None
+    weight: Optional[float] = None
     # 향후 비밀번호 변경 등을 추가 가능
     # password: Optional[str] = None
     

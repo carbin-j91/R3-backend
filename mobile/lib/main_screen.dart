@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:mobile/l10n/app_strings.dart';
-
-// 필요한 모든 스크린들을 가져옵니다.
 import 'package:mobile/screens/home_screen.dart';
 import 'package:mobile/screens/explore_screen.dart';
 import 'package:mobile/screens/record_screen.dart';
 import 'package:mobile/screens/album_screen.dart';
+import 'package:mobile/screens/map_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -15,95 +14,124 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  // final이 아닌 일반 변수로 변경하여 값을 바꿀 수 있게 합니다.
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+  late AnimationController _animationController;
 
-  // 하단 탭과 연결될 4개의 메인 화면 목록입니다.
-  static const List<Widget> _widgetOptions = <Widget>[
-    HomeScreen(),
-    ExploreScreen(),
-    RecordScreen(),
-    AlbumScreen(),
+  final iconList = <IconData>[
+    Icons.home,
+    Icons.explore,
+    Icons.article_outlined,
+    Icons.photo_album_outlined,
   ];
 
-  // 탭을 눌렀을 때 _selectedIndex 값을 변경하여 화면을 전환하는 함수입니다.
+  final List<Widget> _widgetOptions = <Widget>[
+    const HomeScreen(),
+    const ExploreScreen(),
+    const RecordScreen(),
+    const AlbumScreen(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      // ----> 1. 애니메이션 초기값을 1.0(최대 크기)으로 설정합니다. <----
+      value: 1.0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
+    // 탭을 누를 때마다 아이콘이 살짝 커졌다가 돌아오는 효과
+    _animationController.reverse().then((_) => _animationController.forward());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true, // body가 bottomNavigationBar 뒤로 확장되도록 함
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
-      floatingActionButton: SpeedDial(
-        icon: Icons.add,
-        activeIcon: Icons.close,
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
-        overlayColor: Colors.black,
-        overlayOpacity: 0.4,
-        spacing: 12,
+      // ----> 2. Stack을 사용하여 하단 바 위에 플로팅 버튼을 직접 배치합니다. <----
+      bottomNavigationBar: Stack(
+        alignment: Alignment.bottomCenter,
         children: [
-          _buildSpeedDialChild(
-            icon: Icons.photo_camera,
-            label: AppStrings.savePhoto,
-            onTap: () {
-              /* 사진저장 로직 */
-            },
+          // 하단 바 배경
+          BottomAppBar(
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 8.0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: <Widget>[
+                _buildNavItem(icon: iconList[0], index: 0),
+                _buildNavItem(icon: iconList[1], index: 1),
+                const SizedBox(width: 60), // 중앙 버튼을 위한 공간
+                _buildNavItem(icon: iconList[2], index: 2),
+                _buildNavItem(icon: iconList[3], index: 3),
+              ],
+            ),
           ),
-          _buildSpeedDialChild(
-            icon: Icons.book,
-            label: AppStrings.createJournal,
-            onTap: () {
-              /* 일지쓰기 로직 */
-            },
-          ),
-          _buildSpeedDialChild(
-            icon: Icons.edit,
-            label: AppStrings.createPost,
-            onTap: () {
-              /* 글쓰기 로직 */
-            },
-          ),
-          _buildSpeedDialChild(
-            icon: Icons.directions_run,
-            label: AppStrings.createRun,
-            onTap: () {
-              /* 러닝 로직 */
-            },
+          // 중앙 퀵 스타트 버튼
+          Positioned(
+            // 3. 버튼의 높이를 하단 바와 거의 일치하도록 미세 조정합니다.
+            right:
+                MediaQuery.of(context).size.width / 2 -
+                (60 / 2) -
+                7, //예시: 중앙에서 10픽셀 우측으로 이동 (화면 너비 / 2) - (버튼 너비 / 2) + 이동량
+            bottom: MediaQuery.of(context).padding.bottom + 15,
+            child: _buildSpeedDial(),
           ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: <Widget>[
-            _buildNavItem(
-              icon: Icons.home,
-              label: AppStrings.tabHome,
-              index: 0,
+    );
+  }
+
+  Widget _buildNavItem({required IconData icon, required int index}) {
+    // 탭 라벨 목록
+    const labels = [
+      AppStrings.tabHome,
+      AppStrings.tabExplore,
+      AppStrings.tabRecord,
+      AppStrings.tabAlbum,
+    ];
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onItemTapped(index),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ScaleTransition(
+              scale: Tween<double>(begin: 0.9, end: 1.1).animate(
+                CurvedAnimation(
+                  parent: _animationController,
+                  curve: Curves.easeOut,
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: _selectedIndex == index
+                    ? Colors.blueAccent
+                    : Colors.grey,
+                size: 28,
+              ),
             ),
-            _buildNavItem(
-              icon: Icons.explore,
-              label: AppStrings.tabExplore,
-              index: 1,
-            ),
-            const SizedBox(width: 48), // 플로팅 버튼을 위한 중앙의 빈 공간
-            _buildNavItem(
-              icon: Icons.article_outlined,
-              label: AppStrings.tabRecord,
-              index: 2,
-            ),
-            _buildNavItem(
-              icon: Icons.photo_album_outlined,
-              label: AppStrings.tabAlbum,
-              index: 3,
+            Text(
+              labels[index],
+              style: TextStyle(
+                color: _selectedIndex == index
+                    ? Colors.blueAccent
+                    : Colors.grey,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
@@ -111,24 +139,62 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // 하단 탭 아이템을 만드는 위젯
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-  }) {
-    return IconButton(
-      icon: Icon(
-        icon,
-        color: _selectedIndex == index ? Colors.blueAccent : Colors.grey,
-        size: 28,
+  Widget _buildSpeedDial() {
+    return SpeedDial(
+      // ----> 2. 이 부분을 수정하여 버튼을 하단 바와 통합합니다. <----
+
+      // 배경색과 그림자를 제거하여 떠 있는 느낌을 없앱니다.
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+
+      // 렌더링 박스를 제거하여 다른 위젯처럼 보이게 합니다.
+      renderOverlay: false,
+
+      // 아이콘과 이미지
+      buttonSize: const Size(60.0, 60.0),
+      activeChild: const Icon(Icons.close),
+
+      // 펼쳐지는 하위 메뉴들 (이전과 동일)
+      childrenButtonSize: const Size(60.0, 60.0),
+      spacing: 12,
+      children: [
+        _buildSpeedDialChild(
+          icon: Icons.edit,
+          label: AppStrings.quickStartWritePost,
+          onTap: () {
+            /* TODO: 글쓰기 화면으로 이동 */
+          },
+        ),
+        _buildSpeedDialChild(
+          icon: Icons.book,
+          label: AppStrings.quickStartWriteJournal,
+          onTap: () {
+            /* TODO: 일지쓰기 화면으로 이동 */
+          },
+        ),
+        _buildSpeedDialChild(
+          icon: Icons.photo_camera,
+          label: AppStrings.quickStartSavePhoto,
+          onTap: () {
+            /* TODO: 사진저장 화면으로 이동 */
+          },
+        ),
+        _buildSpeedDialChild(
+          icon: Icons.directions_run,
+          label: AppStrings.quickStartRun,
+          onTap: () {
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (context) => const MapScreen()));
+          },
+        ),
+      ], // 버튼 크기
+      child: ClipOval(
+        child: Image.asset('assets/images/app_icon.png', fit: BoxFit.cover),
       ),
-      onPressed: () => _onItemTapped(index),
-      tooltip: label,
     );
   }
 
-  // 스피드 다이얼 자식 버튼을 만드는 위젯
   SpeedDialChild _buildSpeedDialChild({
     required IconData icon,
     required String label,

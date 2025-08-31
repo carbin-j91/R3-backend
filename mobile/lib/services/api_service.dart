@@ -15,7 +15,7 @@ class ApiService {
   //     : 'http://192.168.x.x:8000'; // 실제 IP 주소로 변경
 
   // ngrok을 사용할 때의 주소
-  static const String _baseUrl = 'https://c72f9434b1e3.ngrok-free.app';
+  static const String _baseUrl = 'https://327cd56ed4ac.ngrok-free.app';
 
   // --- 사용자 관련 API ---
 
@@ -51,25 +51,37 @@ class ApiService {
     }
   }
 
-  static Future<User> updateUserProfile({String? nickname}) async {
+  static Future<User> updateUserProfile({
+    String? nickname,
+    double? height,
+    double? weight,
+  }) async {
     final token = await SecureStorageService().readToken();
     if (token == null) throw Exception('Token not found');
+
     final url = Uri.parse('$_baseUrl/api/v1/users/me');
+
+    // 보낼 데이터만 필터링하여 body를 구성합니다.
+    final Map<String, dynamic> body = {};
+    if (nickname != null) body['nickname'] = nickname;
+    if (height != null) body['height'] = height;
+    if (weight != null) body['weight'] = weight;
+
     final response = await http.patch(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({'nickname': nickname}),
+      body: jsonEncode(body),
     );
+
     if (response.statusCode == 200) {
       return User.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     } else {
       throw Exception('Failed to update profile');
     }
   }
-
   // --- 러닝 기록 관련 API ---
 
   static Future<Run> createRun() async {

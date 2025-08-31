@@ -39,8 +39,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               if (user != null && mounted) {
                 final result = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(
-                    builder: (context) =>
-                        EditProfileScreen(currentNickname: user.nickname ?? ''),
+                    // ----> 6. 이제 currentNickname 대신 user 객체 전체를 전달합니다. <----
+                    builder: (context) => EditProfileScreen(user: user),
                   ),
                 );
                 if (result == true) {
@@ -78,6 +78,16 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildProfileInfoRow(AppStrings.profileEmail, user.email),
+                  const SizedBox(height: 16),
+                  _buildProfileInfoRow(
+                    AppStrings.profileHeight,
+                    user.height?.toString() ?? AppStrings.profileNotSet,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildProfileInfoRow(
+                    AppStrings.profileWeight,
+                    user.weight?.toString() ?? AppStrings.profileNotSet,
+                  ),
                   const SizedBox(height: 16),
                   _buildProfileInfoRow(
                     AppStrings.profileJoinDate,

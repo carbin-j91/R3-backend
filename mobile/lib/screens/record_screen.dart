@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/services/api_service.dart';
-import 'package:mobile/screens/my_runs_screen.dart';
 import 'package:mobile/screens/run_detail_screen.dart';
+import 'package:mobile/utils/format_utils.dart';
 
 class RecordScreen extends StatelessWidget {
   const RecordScreen({super.key});
@@ -14,11 +14,9 @@ class RecordScreen extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        // AppBar를 제거하고, body에서부터 시작합니다.
         body: SafeArea(
           child: Column(
             children: [
-              // 1. 커스텀 탭바
               const TabBar(
                 tabs: [
                   Tab(text: AppStrings.recordTabRuns),
@@ -29,16 +27,12 @@ class RecordScreen extends StatelessWidget {
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: Colors.blueAccent,
               ),
-              // 2. 탭바 아래의 내용
               Expanded(
                 child: TabBarView(
                   children: [
-                    // '러닝기록' 탭: 기존 RunningRecordsList 위젯을 그대로 사용
-                    RunningRecordsList(),
-                    // '훈련일지' 탭 (임시)
-                    Center(child: Text('훈련일지 화면입니다.')),
-                    // '앨범' 탭 (임시)
-                    Center(child: Text('앨범 화면입니다.')),
+                    const RunningRecordsList(),
+                    const Center(child: Text('훈련일지 화면입니다.')),
+                    const Center(child: Text('앨범 화면입니다.')),
                   ],
                 ),
               ),
@@ -50,7 +44,6 @@ class RecordScreen extends StatelessWidget {
   }
 }
 
-// '러닝기록' 탭의 내용을 보여주는 위젯 (기존 MyRunsScreen의 코드를 재활용)
 class RunningRecordsList extends StatefulWidget {
   const RunningRecordsList({super.key});
 
@@ -106,11 +99,18 @@ class _RunningRecordsListState extends State<RunningRecordsList> {
               ),
             );
           }
-          return ListView.builder(
-            itemCount: runs.length,
-            itemBuilder: (context, index) {
-              return RunListItem(run: runs[index]);
-            },
+          // 목록이 비어있지 않다면, 새로고침 가능한 목록을 보여줍니다.
+          return RefreshIndicator(
+            onRefresh: () async => _refreshRuns(),
+            child: ListView.builder(
+              itemCount: runs.length,
+              itemBuilder: (context, index) {
+                return RunListItem(
+                  run: runs[index],
+                  onRecordDeleted: _refreshRuns, // 삭제 후 목록을 새로고침하기 위한 콜백
+                );
+              },
+            ),
           );
         }
         return const Center(child: Text('기록을 불러올 수 없습니다.'));
@@ -119,10 +119,15 @@ class _RunningRecordsListState extends State<RunningRecordsList> {
   }
 }
 
-// 하나의 러닝 기록 아이템 위젯 (기존과 동일)
 class RunListItem extends StatelessWidget {
   final Run run;
-  const RunListItem({super.key, required this.run});
+  final VoidCallback onRecordDeleted; // 기록이 삭제되었을 때 호출될 함수
+
+  const RunListItem({
+    super.key,
+    required this.run,
+    required this.onRecordDeleted,
+  });
 
   String _formatDuration(double seconds) {
     final duration = Duration(seconds: seconds.toInt());
@@ -145,21 +150,25 @@ class RunListItem extends StatelessWidget {
           size: 40,
         ),
         title: Text(
-          '${(run.distance / 1000).toStringAsFixed(2)} km',
+          run.title ?? FormatUtils.formatDate(run.createdAt), // 제목이 없으면 날짜를 표시
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         subtitle: Text(
-          '시간: ${_formatDuration(run.duration)}\n일시: ${DateFormat('yyyy년 MM월 dd일').format(run.createdAt.toLocal())}',
+          '거리: ${(run.distance / 1000).toStringAsFixed(2)} km / 시간: ${_formatDuration(run.duration)}',
           style: TextStyle(color: Colors.grey.shade600),
         ),
         trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          // onTap을 누르면 RunDetailScreen으로 이동하도록 수정합니다.
-          Navigator.of(context).push(
+        onTap: () async {
+          // 2. 이제 이 코드가 정상적으로 작동합니다.
+          final result = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
               builder: (context) => RunDetailScreen(runId: run.id),
             ),
           );
+          // 상세 화면에서 true를 돌려받으면 (삭제가 성공하면), 목록을 새로고침합니다.
+          if (result == true) {
+            onRecordDeleted();
+          }
         },
       ),
     );

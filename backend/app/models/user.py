@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy import Column, String, Boolean, DateTime, Float, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -13,6 +13,9 @@ class User(Base):
     __tablename__ = "users"
     is_active = Column(Boolean(), default=True)
     created_at = Column(DateTime, default=func.now())
+    height = Column(Float, nullable=True)  # 키 (cm)
+    weight = Column(Float, nullable=True)  # 몸무게 (kg)
+
     # ----> 2. 아래 관계 설정을 추가합니다. <----
     # 이 사용자가 작성한 모든 러닝 기록에 접근할 수 있습니다.
     runs = relationship("Run", back_populates="owner")

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'package:mobile/l10n/app_strings.dart'; // 1. 다국어 지원을 위해 AppStrings를 가져옵니다.
+import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
-import 'package:mobile/screens/edit_run_screen.dart'; // 2. 수정 화면을 가져옵니다.
+import 'package:mobile/screens/edit_run_screen.dart';
 import 'package:mobile/services/api_service.dart';
-import 'package:mobile/utils/format_utils.dart'; // 3. 포맷팅 도구를 가져옵니다.
-import 'package:mobile/widgets/run_detail_widget.dart';
+import 'package:mobile/widgets/run_detail_widget.dart'; // <-- 1. 이 줄이 가장 중요합니다!
 
 class RunDetailScreen extends StatefulWidget {
   final String runId;
-
   const RunDetailScreen({super.key, required this.runId});
 
   @override
@@ -25,14 +22,12 @@ class _RunDetailScreenState extends State<RunDetailScreen> {
     _loadRunDetails();
   }
 
-  // 데이터를 다시 불러와 화면을 새로고침하는 함수
   void _loadRunDetails() {
     setState(() {
       _runDetailFuture = ApiService.getRunDetail(widget.runId);
     });
   }
 
-  // 삭제 버튼을 눌렀을 때 실행될 함수
   Future<void> _deleteRun() async {
     final bool? confirmed = await showDialog(
       context: context,
@@ -58,8 +53,9 @@ class _RunDetailScreenState extends State<RunDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(AppStrings.runDeleteSuccess)),
         );
-        Navigator.of(context).pop(true); // 목록 화면으로 돌아가서 새로고침하도록 true 전달
+        Navigator.of(context).pop(true);
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(AppStrings.runDeleteFailed)),
         );
@@ -72,7 +68,6 @@ class _RunDetailScreenState extends State<RunDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.runDetailTitle),
-        // ----> 4. AppBar 오른쪽에 '더보기' 메뉴를 추가합니다. <----
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) async {
@@ -84,7 +79,6 @@ class _RunDetailScreenState extends State<RunDetailScreen> {
                       builder: (context) => EditRunScreen(run: run),
                     ),
                   );
-                  // 수정 화면에서 true를 돌려받으면, 상세 화면을 새로고침합니다.
                   if (result == true) {
                     _loadRunDetails();
                   }
@@ -115,9 +109,7 @@ class _RunDetailScreenState extends State<RunDetailScreen> {
           if (snapshot.hasError || !snapshot.hasData) {
             return const Center(child: Text('기록을 불러오는 데 실패했습니다.'));
           }
-
           final run = snapshot.data!;
-          // 이제 RunDetailWidget을 사용합니다.
           return RunDetailWidget(run: run);
         },
       ),
