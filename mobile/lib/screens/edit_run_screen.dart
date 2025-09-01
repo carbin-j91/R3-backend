@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
-import 'package:mobile/schemas/run_update_schema.dart'; // RunUpdate 스키마 import
+import 'package:mobile/schemas/run_update_schema.dart';
 import 'package:mobile/services/api_service.dart';
 
 class EditRunScreen extends StatefulWidget {
@@ -13,33 +13,36 @@ class EditRunScreen extends StatefulWidget {
 }
 
 class _EditRunScreenState extends State<EditRunScreen> {
-  late final TextEditingController _titleController;
-  late final TextEditingController _notesController;
+  late final TextEditingController _distanceController;
+  late final TextEditingController _durationController;
+  // TODO: 시작/종료 시간 편집 기능 추가
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.run.title);
-    _notesController = TextEditingController(text: widget.run.notes);
+    _distanceController = TextEditingController(
+      text: (widget.run.distance / 1000).toStringAsFixed(2),
+    );
+    _durationController = TextEditingController(
+      text: widget.run.duration.toString(),
+    );
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _notesController.dispose();
+    _distanceController.dispose();
+    _durationController.dispose();
     super.dispose();
   }
 
   Future<void> _saveRun() async {
     setState(() => _isLoading = true);
     try {
-      // 1. title과 notes만 포함된 RunUpdate 객체를 생성합니다.
       final runDataToUpdate = RunUpdate(
-        title: _titleController.text,
-        notes: _notesController.text,
+        distance: (double.tryParse(_distanceController.text) ?? 0.0) * 1000,
+        duration: double.tryParse(_durationController.text) ?? 0.0,
       );
-      // 2. ApiService.updateRun을 올바른 방식으로 호출합니다.
       await ApiService.updateRun(widget.run.id, runDataToUpdate);
 
       if (mounted) {
@@ -68,20 +71,23 @@ class _EditRunScreenState extends State<EditRunScreen> {
         child: Column(
           children: [
             TextField(
-              controller: _titleController,
+              controller: _distanceController,
               decoration: const InputDecoration(
-                labelText: AppStrings.runTitleLabel,
+                labelText: AppStrings.editRunDistance,
                 border: OutlineInputBorder(),
+                suffixText: 'km',
               ),
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 24),
             TextField(
-              controller: _notesController,
+              controller: _durationController,
               decoration: const InputDecoration(
-                labelText: AppStrings.runNotesLabel,
+                labelText: AppStrings.editRunDuration,
                 border: OutlineInputBorder(),
+                suffixText: '초',
               ),
-              maxLines: 5,
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 32),
             _isLoading

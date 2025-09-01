@@ -9,8 +9,8 @@ class RunBase(BaseModel):
     """
     title: Optional[str] = None
     notes: Optional[str] = None
-    distance: float
-    duration: float
+    distance: Optional[float] = None
+    duration: Optional[float] = None
     route: Optional[List[Any]] = None
     
     # ----> 새로운 필드들을 추가합니다. <----
@@ -45,7 +45,8 @@ class RunUpdate(BaseModel):
     total_elevation_gain: Optional[float] = None
     splits: Optional[List[Any]] = None
     status: Optional[str] = None
-
+    end_at: Optional[datetime] = None
+    
 class Run(RunBase):
     """
     API 응답으로 러닝 기록을 반환할 때 사용할 스키마입니다.
@@ -53,6 +54,8 @@ class Run(RunBase):
     id: uuid.UUID
     user_id: uuid.UUID
     created_at: datetime
+    end_at: Optional[datetime] = None
+    status: Optional[str] = None
 
     class Config:
         from_attributes = True

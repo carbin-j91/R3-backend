@@ -22,7 +22,7 @@ class Run(Base):
     
     route = Column(JSONB, nullable=True)
     created_at = Column(DateTime, default=func.now())
-
+    end_at = Column(DateTime, nullable=True)
     # ----> 아래 새로운 컬럼들을 추가합니다. <----
     
     calories_burned = Column(Float, nullable=True)

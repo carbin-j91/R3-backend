@@ -105,6 +105,10 @@ class AppStrings {
     return '거리 $km킬로미터, 총 시간 $totalTime, 평균 페이스 $avgPace';
   }
 
+  // 포그라운드 서비스 알림
+  static const String foregroundNotificationTitle = 'RRR 러닝';
+  static const String foregroundNotificationContent = '러닝 경로를 기록하고 있습니다.';
+
   static const String runFinishConfirmTitle = '러닝 종료';
   static const String runFinishConfirmContent = '현재 기록을 저장하시겠습니까?';
   static const String runSave = '저장';
@@ -150,4 +154,8 @@ class AppStrings {
   static const String runUpdateFailed = '기록 업데이트에 실패했습니다.';
   static const String runDeleteSuccess = '기록이 삭제되었습니다.';
   static const String runDeleteFailed = '기록 삭제에 실패했습니다.';
+  static const String editRunStartTime = '시작 시간';
+  static const String editRunEndTime = '종료 시간';
+  static const String editRunDistance = '거리 (km)';
+  static const String editRunDuration = '시간';
 }

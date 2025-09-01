@@ -16,6 +16,7 @@ class Run {
   final List<dynamic>? splits;
   final List<dynamic>? chartData;
   final String? status;
+  final DateTime? endAt;
 
   Run({
     required this.id,
@@ -33,6 +34,7 @@ class Run {
     this.splits,
     this.chartData,
     this.status,
+    this.endAt, // 생성자에 추가
   });
 
   // --- 수정된 최종 팩토리 생성자 ---
@@ -61,6 +63,7 @@ class Run {
       chartData:
           json['chartData'], // 서버 모델에 chartData가 없으면 이 줄은 오류를 유발할 수 있습니다.
       status: json['status'],
+      endAt: json['end_at'] != null ? DateTime.parse(json['end_at']) : null,
     );
   }
 }

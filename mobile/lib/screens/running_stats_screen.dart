@@ -11,6 +11,7 @@ import 'package:mobile/services/running_calculator_service.dart';
 import 'package:mobile/screens/run_result_screen.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter/foundation.dart';
 
 class RunningStatsScreen extends StatefulWidget {
   const RunningStatsScreen({super.key});
@@ -176,98 +177,104 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     );
   }
 
+  // ----> 1. _startTracking 함수를 이 버전으로 교체합니다. <----
   void _startTracking() {
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 0,
+      distanceFilter: 5,
     );
     _positionStream =
         Geolocator.getPositionStream(
           locationSettings: locationSettings,
         ).listen((Position position) {
+          if (!mounted) return;
+
           _lastPositionTimestamp = DateTime.now();
           if (_isAutoPaused) _resumeRunning();
 
-          if (mounted) {
-            setState(() {
-              final newPoint = NLatLng(position.latitude, position.longitude);
-              if (_routePoints.isNotEmpty) {
-                final lastPoint = _routePoints.last;
-                final distanceDelta = Geolocator.distanceBetween(
-                  lastPoint.latitude,
-                  lastPoint.longitude,
-                  newPoint.latitude,
-                  newPoint.longitude,
-                );
-                _totalDistance += distanceDelta;
-                if (_lastPosition != null &&
-                    position.altitude > _lastPosition!.altitude) {
-                  _totalElevationGain +=
-                      position.altitude - _lastPosition!.altitude;
-                }
-                final currentPace = _elapsedSeconds > 0
-                    ? _elapsedSeconds / (_totalDistance / 1000)
-                    : 0.0;
-                _totalCalories += _calculator.calculateCaloriesForDistance(
-                  distanceDelta,
-                  currentPace,
-                );
+          setState(() {
+            final newPoint = NLatLng(position.latitude, position.longitude);
 
-                _chartData.add({
-                  'time': _elapsedSeconds,
-                  'pace': currentPace,
-                  'lat': position.latitude,
-                  'lng': position.longitude,
-                  'distance': _totalDistance,
-                });
+            // 첫 번째 위치는 기준점으로만 사용하고, 두 번째 위치부터 거리를 계산합니다.
+            if (_routePoints.isNotEmpty) {
+              final lastPoint = _routePoints.last;
+              final distanceDelta = Geolocator.distanceBetween(
+                lastPoint.latitude,
+                lastPoint.longitude,
+                newPoint.latitude,
+                newPoint.longitude,
+              );
+              _totalDistance += distanceDelta;
 
-                final currentKm = (_totalDistance / 1000).floor();
-                if (currentKm > _lastSplitDistanceKm) {
-                  final splitTime = _elapsedSeconds - _lastSplitTimeSeconds;
-                  final splitSteps = _stepCount - _lastSplitStepCount;
-                  final splitCadence = splitTime > 0
-                      ? (splitSteps / splitTime * 60).round()
-                      : 0;
-                  final splitElevationGain =
-                      _lastPosition != null &&
-                          position.altitude > _lastPosition!.altitude
-                      ? position.altitude - _lastPosition!.altitude
-                      : 0.0;
-                  _splits.add({
-                    'split': currentKm,
-                    'pace': splitTime.toDouble(),
-                    'time': splitTime,
-                    'cadence': splitCadence,
-                    'elevation': splitElevationGain,
-                  });
-                  _lastSplitDistanceKm = currentKm;
-                  _lastSplitTimeSeconds = _elapsedSeconds;
-                  _lastSplitStepCount = _stepCount;
-
-                  final totalDuration = Duration(seconds: _elapsedSeconds);
-                  final totalTimeFormatted =
-                      "${totalDuration.inMinutes}분 ${totalDuration.inSeconds % 60}초";
-                  final avgPace = _calculator.calculateAveragePace(
-                    _totalDistance,
-                    _elapsedSeconds,
-                  );
-                  final paceMinutes = (avgPace / 60).floor();
-                  final paceSeconds = (avgPace % 60).round();
-                  final avgPaceFormatted =
-                      "$paceMinutes분 ${paceSeconds.toString().padLeft(2, '0')}초";
-                  _speak(
-                    AppStrings.ttsSplitNotification(
-                      currentKm,
-                      totalTimeFormatted,
-                      avgPaceFormatted,
-                    ),
-                  );
-                }
+              if (_lastPosition != null &&
+                  position.altitude > _lastPosition!.altitude) {
+                _totalElevationGain +=
+                    position.altitude - _lastPosition!.altitude;
               }
-              _routePoints.add(newPoint);
-              _lastPosition = position;
-            });
-          }
+
+              final currentPace = _elapsedSeconds > 0
+                  ? _elapsedSeconds / (_totalDistance / 1000)
+                  : 0.0;
+              _totalCalories += _calculator.calculateCaloriesForDistance(
+                distanceDelta,
+                currentPace,
+              );
+
+              _chartData.add({
+                'time': _elapsedSeconds,
+                'pace': currentPace,
+                'lat': position.latitude,
+                'lng': position.longitude,
+                'distance': _totalDistance,
+              });
+
+              final currentKm = (_totalDistance / 1000).floor();
+              if (currentKm > 0 && currentKm > _lastSplitDistanceKm) {
+                final splitTime = _elapsedSeconds - _lastSplitTimeSeconds;
+                final splitSteps = _stepCount - _lastSplitStepCount;
+                final splitCadence = splitTime > 0
+                    ? (splitSteps / splitTime * 60).round()
+                    : 0;
+                final splitElevationGain =
+                    _lastPosition != null &&
+                        position.altitude > _lastPosition!.altitude
+                    ? position.altitude - _lastPosition!.altitude
+                    : 0.0;
+                _splits.add({
+                  'split': currentKm,
+                  'pace': splitTime.toDouble(),
+                  'time': splitTime,
+                  'cadence': splitCadence,
+                  'elevation': splitElevationGain,
+                });
+                _lastSplitDistanceKm = currentKm;
+                _lastSplitTimeSeconds = _elapsedSeconds;
+                _lastSplitStepCount = _stepCount;
+
+                final totalDuration = Duration(seconds: _elapsedSeconds);
+                final totalTimeFormatted =
+                    "${totalDuration.inMinutes}분 ${totalDuration.inSeconds % 60}초";
+                final avgPace = _calculator.calculateAveragePace(
+                  _totalDistance,
+                  _elapsedSeconds,
+                );
+                final paceMinutes = (avgPace / 60).floor();
+                final paceSeconds = (avgPace % 60).round();
+                final avgPaceFormatted =
+                    "$paceMinutes분 ${paceSeconds.toString().padLeft(2, '0')}초";
+                _speak(
+                  AppStrings.ttsSplitNotification(
+                    currentKm,
+                    totalTimeFormatted,
+                    avgPaceFormatted,
+                  ),
+                );
+              }
+            }
+
+            _routePoints.add(newPoint);
+            _lastPosition = position;
+          });
         });
 
     _accelerometerStream = userAccelerometerEventStream().listen((
@@ -630,6 +637,7 @@ class _OverallStatsPage extends StatelessWidget {
 }
 
 // ----> 3. _SplitsPage 위젯을 아래 코드로 교체합니다. <----
+
 class _SplitsPage extends StatelessWidget {
   final List<Map<String, dynamic>> splits;
   const _SplitsPage({required this.splits});

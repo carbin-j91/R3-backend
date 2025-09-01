@@ -8,7 +8,7 @@ import 'package:mobile/schemas/run_update_schema.dart';
 import 'package:mobile/services/secure_storage_service.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://327cd56ed4ac.ngrok-free.app';
+  static const String _baseUrl = 'https://7ad60ab1b2cb.ngrok-free.app';
 
   // --- 사용자 관련 API ---
 
@@ -119,33 +119,25 @@ class ApiService {
     }
   }
 
-  // ----> updateRun 함수를 이 하나의 버전으로 최종 통일합니다. <----
   static Future<Run> updateRun(String runId, RunUpdate runData) async {
     final token = await SecureStorageService().readToken();
     if (token == null) throw Exception('Token not found');
 
     final url = Uri.parse('$_baseUrl/api/v1/runs/$runId');
-    final payload = runData.toJson();
-
-    debugPrint('[RUN PATCH] /runs/$runId');
-    debugPrint('[RUN PATCH PAYLOAD] ${jsonEncode(payload)}');
-
     final response = await http.patch(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode(payload),
+      body: jsonEncode(runData.toJson()),
     );
-
-    debugPrint('[RUN PATCH RES] code=${response.statusCode}');
-    debugPrint('[RUN PATCH RES BODY] ${response.body}');
 
     if (response.statusCode == 200) {
       return Run.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     } else {
-      throw Exception('Failed to update run: ${response.statusCode}');
+      print('Error Body: ${response.body}');
+      throw Exception('Failed to update run');
     }
   }
 
