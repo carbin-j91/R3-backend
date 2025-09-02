@@ -20,7 +20,7 @@ class RunBase(BaseModel):
     avg_cadence: Optional[int] = None
     total_elevation_gain: Optional[float] = None
     splits: Optional[List[Any]] = None
-
+    chartData: Optional[List[Any]] = None
 
 class RunCreate(BaseModel):
     """
@@ -46,6 +46,7 @@ class RunUpdate(BaseModel):
     splits: Optional[List[Any]] = None
     status: Optional[str] = None
     end_at: Optional[datetime] = None
+    is_edited: Optional[bool] = None
     
 class Run(RunBase):
     """
@@ -56,6 +57,7 @@ class Run(RunBase):
     created_at: datetime
     end_at: Optional[datetime] = None
     status: Optional[str] = None
-
+    is_edited: bool
+    
     class Config:
         from_attributes = True

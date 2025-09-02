@@ -8,7 +8,7 @@ import 'package:mobile/schemas/run_update_schema.dart';
 import 'package:mobile/services/secure_storage_service.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://7ad60ab1b2cb.ngrok-free.app';
+  static const String _baseUrl = 'https://c098e1398168.ngrok-free.app';
 
   // --- 사용자 관련 API ---
 

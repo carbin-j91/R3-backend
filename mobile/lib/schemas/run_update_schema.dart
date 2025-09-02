@@ -13,6 +13,8 @@ class RunUpdate {
   final List<Map<String, dynamic>>? splits;
   final List<Map<String, dynamic>>? chartData;
   final String? status;
+  final DateTime? endAt;
+  final bool? isEdited;
 
   RunUpdate({
     this.title,
@@ -27,6 +29,8 @@ class RunUpdate {
     this.splits,
     this.chartData,
     this.status,
+    this.endAt,
+    this.isEdited,
   });
 
   RunUpdate copyWith({String? status}) {

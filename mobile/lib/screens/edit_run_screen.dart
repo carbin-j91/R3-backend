@@ -3,6 +3,7 @@ import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/schemas/run_update_schema.dart';
 import 'package:mobile/services/api_service.dart';
+import 'package:mobile/services/running_calculator_service.dart';
 
 class EditRunScreen extends StatefulWidget {
   final Run run;
@@ -14,8 +15,9 @@ class EditRunScreen extends StatefulWidget {
 
 class _EditRunScreenState extends State<EditRunScreen> {
   late final TextEditingController _distanceController;
-  late final TextEditingController _durationController;
-  // TODO: 시작/종료 시간 편집 기능 추가
+  late final TextEditingController _hoursController;
+  late final TextEditingController _minutesController;
+  late final TextEditingController _secondsController;
   bool _isLoading = false;
 
   @override
@@ -24,25 +26,51 @@ class _EditRunScreenState extends State<EditRunScreen> {
     _distanceController = TextEditingController(
       text: (widget.run.distance / 1000).toStringAsFixed(2),
     );
-    _durationController = TextEditingController(
-      text: widget.run.duration.toString(),
+    final duration = Duration(seconds: widget.run.duration.toInt());
+    _hoursController = TextEditingController(text: duration.inHours.toString());
+    _minutesController = TextEditingController(
+      text: (duration.inMinutes % 60).toString(),
+    );
+    _secondsController = TextEditingController(
+      text: (duration.inSeconds % 60).toString(),
     );
   }
 
   @override
   void dispose() {
     _distanceController.dispose();
-    _durationController.dispose();
+    _hoursController.dispose();
+    _minutesController.dispose();
+    _secondsController.dispose();
     super.dispose();
   }
 
   Future<void> _saveRun() async {
     setState(() => _isLoading = true);
     try {
-      final runDataToUpdate = RunUpdate(
-        distance: (double.tryParse(_distanceController.text) ?? 0.0) * 1000,
-        duration: double.tryParse(_durationController.text) ?? 0.0,
+      final distance =
+          (double.tryParse(_distanceController.text) ?? 0.0) * 1000;
+      final hours = int.tryParse(_hoursController.text) ?? 0;
+      final minutes = int.tryParse(_minutesController.text) ?? 0;
+      final seconds = int.tryParse(_secondsController.text) ?? 0;
+      final totalDuration = Duration(
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds,
+      ).inSeconds.toDouble();
+
+      final avgPace = RunningCalculatorService().calculateAveragePace(
+        distance,
+        totalDuration.toInt(),
       );
+
+      final runDataToUpdate = RunUpdate(
+        distance: distance,
+        duration: totalDuration,
+        avgPace: avgPace,
+        isEdited: true, // 수정된 기록임을 명시
+      );
+
       await ApiService.updateRun(widget.run.id, runDataToUpdate);
 
       if (mounted) {
@@ -69,6 +97,7 @@ class _EditRunScreenState extends State<EditRunScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _distanceController,
@@ -80,14 +109,36 @@ class _EditRunScreenState extends State<EditRunScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 24),
-            TextField(
-              controller: _durationController,
-              decoration: const InputDecoration(
-                labelText: AppStrings.editRunDuration,
-                border: OutlineInputBorder(),
-                suffixText: '초',
-              ),
-              keyboardType: TextInputType.number,
+            const Text(
+              AppStrings.editRunDuration,
+              style: TextStyle(fontSize: 16),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _hoursController,
+                    decoration: const InputDecoration(labelText: '시간'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const Text(' : '),
+                Expanded(
+                  child: TextField(
+                    controller: _minutesController,
+                    decoration: const InputDecoration(labelText: '분'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const Text(' : '),
+                Expanded(
+                  child: TextField(
+                    controller: _secondsController,
+                    decoration: const InputDecoration(labelText: '초'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 32),
             _isLoading

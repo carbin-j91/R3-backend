@@ -158,4 +158,5 @@ class AppStrings {
   static const String editRunEndTime = '종료 시간';
   static const String editRunDistance = '거리 (km)';
   static const String editRunDuration = '시간';
+  static const String runIsEdited = '(수정됨)';
 }

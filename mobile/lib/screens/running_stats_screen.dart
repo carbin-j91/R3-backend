@@ -11,7 +11,6 @@ import 'package:mobile/services/running_calculator_service.dart';
 import 'package:mobile/screens/run_result_screen.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:flutter/foundation.dart';
 
 class RunningStatsScreen extends StatefulWidget {
   const RunningStatsScreen({super.key});
@@ -38,7 +37,6 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   Timer? _timer;
   double _totalCalories = 0.0;
 
-  // 1. final 키워드를 모두 제거하여 값을 변경할 수 있도록 합니다.
   int _stepCount = 0;
   int _currentCadence = 0;
   double _lastMagnitude = 0.0;
@@ -62,7 +60,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeTtsAndStartRun(); // TTS 초기화와 러닝 시작을 함께 처리
+    _initializeTtsAndStartRun();
   }
 
   @override
@@ -101,6 +99,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
 
   void _manualPauseRunning() {
     if (!_isRunning) return;
+    _speak(AppStrings.ttsRunPaused);
     _stopTracking();
     _stopTimer();
     setState(() {
@@ -125,6 +124,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   }
 
   void _finishRunning() {
+    _speak(AppStrings.ttsRunFinished);
     _stopTracking();
     _stopTimer();
     if (mounted) setState(() => _isRunning = false);
@@ -134,10 +134,8 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => RunResultScreen(
-            runId: _runId!,
-            initialRunData: runData, // <-- 이제 initialRunData로 전달합니다.
-          ),
+          builder: (context) =>
+              RunResultScreen(runId: _runId!, initialRunData: runData),
         ),
       );
     }
@@ -146,10 +144,11 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   Future<bool> _saveRunToServer(RunUpdate runData) async {
     if (_runId == null) return false;
     try {
-      // status를 'finished'로 설정하여 최종 저장합니다.
       await ApiService.updateRun(_runId!, runData.copyWith(status: 'finished'));
+      print("기록 최종 저장 성공!");
       return true;
     } catch (e) {
+      print("기록 최종 저장 실패: $e");
       return false;
     }
   }
@@ -177,7 +176,6 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     );
   }
 
-  // ----> 1. _startTracking 함수를 이 버전으로 교체합니다. <----
   void _startTracking() {
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
@@ -188,14 +186,11 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
           locationSettings: locationSettings,
         ).listen((Position position) {
           if (!mounted) return;
-
           _lastPositionTimestamp = DateTime.now();
           if (_isAutoPaused) _resumeRunning();
 
           setState(() {
             final newPoint = NLatLng(position.latitude, position.longitude);
-
-            // 첫 번째 위치는 기준점으로만 사용하고, 두 번째 위치부터 거리를 계산합니다.
             if (_routePoints.isNotEmpty) {
               final lastPoint = _routePoints.last;
               final distanceDelta = Geolocator.distanceBetween(
@@ -205,13 +200,11 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
                 newPoint.longitude,
               );
               _totalDistance += distanceDelta;
-
               if (_lastPosition != null &&
                   position.altitude > _lastPosition!.altitude) {
                 _totalElevationGain +=
                     position.altitude - _lastPosition!.altitude;
               }
-
               final currentPace = _elapsedSeconds > 0
                   ? _elapsedSeconds / (_totalDistance / 1000)
                   : 0.0;
@@ -226,6 +219,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
                 'lat': position.latitude,
                 'lng': position.longitude,
                 'distance': _totalDistance,
+                'altitude': position.altitude,
               });
 
               final currentKm = (_totalDistance / 1000).floor();
@@ -271,7 +265,6 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
                 );
               }
             }
-
             _routePoints.add(newPoint);
             _lastPosition = position;
           });
@@ -323,7 +316,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
       final secondsSinceLastMove = DateTime.now()
           .difference(_lastPositionTimestamp!)
           .inSeconds;
-      if (secondsSinceLastMove >= 10) {
+      if (secondsSinceLastMove >= 15) {
         _speak(AppStrings.ttsRunPaused);
         print("$secondsSinceLastMove초 동안 움직임 감지 안됨: 자동 일시정지");
         setState(() {
@@ -359,7 +352,6 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     return shouldPop ?? false;
   }
 
-  // --- UI 위젯 함수들 ---
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -368,14 +360,12 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-    return PopScope<void>(
+    return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (bool didPop, Object? result) async {
-        if (didPop) return; // 이미 pop되었으면 아무 것도 하지 않음
-        final bool shouldPop = await _onWillPop(); // 기존 확인 로직 유지 (Future<bool>)
-        if (shouldPop && mounted) {
-          Navigator.of(context).pop(result); // 확인되면 수동 pop (result 유지)
-        }
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && mounted) Navigator.of(context).pop();
       },
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -453,16 +443,13 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
   }
 
   Widget _buildRunningControls() {
-    // 자동 일시정지 상태인지 여부에 따라 버튼의 기능과 모양이 바뀝니다.
     final bool isPaused = !_isRunning;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GestureDetector(
-            // 자동 일시정지 상태일 때만 '길게 눌러 종료' 기능을 활성화합니다.
             onLongPress: isPaused ? _finishRunning : null,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -474,18 +461,15 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
               ),
               onPressed: () {
                 if (isPaused) {
-                  // 자동 일시정지 상태에서 짧게 누르면 '다시 시작'
                   _resumeRunning();
                 } else {
-                  // 러닝 중일 때 짧게 누르면 '수동 일시정지'
                   _manualPauseRunning();
                 }
               },
               child: Tooltip(
-                // 자동 일시정지 상태일 때만 툴팁을 보여줍니다.
                 message: isPaused ? AppStrings.longPressToFinish : '',
                 child: Icon(
-                  isPaused ? Icons.play_arrow : Icons.pause, // 상태에 따라 아이콘 변경
+                  isPaused ? Icons.play_arrow : Icons.pause,
                   color: Colors.white,
                   size: 50,
                 ),

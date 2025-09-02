@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
-import 'package:mobile/screens/full_screen_map.dart';
 import 'package:mobile/utils/format_utils.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:mobile/screens/full_screen_map.dart'; // 2단계에서 추가할 파일
 
 class RunDetailWidget extends StatefulWidget {
   final Run run;
@@ -16,7 +16,7 @@ class RunDetailWidget extends StatefulWidget {
 
 class _RunDetailWidgetState extends State<RunDetailWidget> {
   bool _showSplits = false;
-  bool _showChart = false;
+  final bool _showChart = false;
   NaverMapController? _mapController;
   final String _touchMarkerId = 'touch_marker';
 
@@ -29,158 +29,73 @@ class _RunDetailWidgetState extends State<RunDetailWidget> {
     final chartData = (widget.run.chartData ?? []).cast<Map<String, dynamic>>();
 
     return ListView(
-      // 스크롤이 가능하도록 ListView를 사용합니다.
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      padding: const EdgeInsets.all(16.0),
       children: [
-        // ----> 1. 러닝 결과 요약 (한 번만 표시) <----
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: _buildSummaryCard(),
-        ),
+        // 1. 러닝 결과 요약
+        _buildSummaryCard(),
         const SizedBox(height: 16),
 
         // 2. 구간별 기록 (접고 펴기)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: ExpansionTile(
-            title: const Text("구간별 기록 보기"),
-            onExpansionChanged: (isExpanded) =>
-                setState(() => _showSplits = isExpanded),
-            initiallyExpanded: _showSplits,
-            children: [_SplitsPage(splits: splits)],
-          ),
+        ExpansionTile(
+          title: const Text("구간별 기록 보기"),
+          onExpansionChanged: (isExpanded) {
+            setState(() {
+              _showSplits = isExpanded;
+            });
+          },
+          initiallyExpanded: _showSplits,
+          children: [_SplitsPage(splits: splits)],
         ),
         const SizedBox(height: 16),
 
-        // 3. 지도
-        GestureDetector(
-          onTap: () {
-            if (routePoints.isNotEmpty) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => FullScreenMap(routePoints: routePoints),
-                  fullscreenDialog: true,
-                ),
-              );
-            }
-          },
-          child: SizedBox(
-            height: 300,
-            child: NaverMap(
-              options: const NaverMapViewOptions(
-                scrollGesturesEnable: false,
-                zoomGesturesEnable: false,
-              ),
-              onMapReady: (controller) {
-                _mapController = controller;
-                if (routePoints.isNotEmpty) {
-                  controller.updateCamera(
-                    NCameraUpdate.fitBounds(
-                      NLatLngBounds.from(routePoints),
-                      padding: const EdgeInsets.all(50),
-                    ),
-                  );
-                  controller.addOverlay(
-                    NPolylineOverlay(
-                      id: 'path',
-                      coords: routePoints,
-                      color: Colors.blueAccent,
-                      width: 5,
-                    ),
-                  );
-                }
-              },
+        SizedBox(
+          height: 300,
+          child: NaverMap(
+            options: const NaverMapViewOptions(
+              scrollGesturesEnable: true,
+              zoomGesturesEnable: true,
             ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // 4. 상세히 보기 (차트 접고 펴기)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: TextButton.icon(
-            icon: Icon(
-              _showChart ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-            ),
-            label: const Text(AppStrings.viewDetails),
-            onPressed: () => setState(() => _showChart = !_showChart),
+            onMapReady: (controller) {
+              if (routePoints.isNotEmpty) {
+                controller.updateCamera(
+                  NCameraUpdate.fitBounds(
+                    NLatLngBounds.from(routePoints),
+                    padding: const EdgeInsets.all(50),
+                  ),
+                );
+                controller.addOverlay(
+                  NPolylineOverlay(
+                    id: 'path',
+                    coords: routePoints,
+                    color: Colors.blueAccent,
+                    width: 5,
+                  ),
+                );
+              }
+            },
           ),
         ),
 
-        if (_showChart && chartData.isNotEmpty)
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                gridData: const FlGridData(show: false),
-                titlesData: const FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        final pace = spot.y;
-                        final paceMinutes = (pace / 60).floor();
-                        final paceSeconds = (pace % 60).round();
-                        return LineTooltipItem(
-                          '${paceMinutes.toString().padLeft(2, '0')}\'${paceSeconds.toString().padLeft(2, '0')}"',
-                          const TextStyle(color: Colors.white),
-                        );
-                      }).toList();
-                    },
-                  ),
-                  touchCallback: (event, touchResponse) {
-                    if (touchResponse == null ||
-                        touchResponse.lineBarSpots == null) {
-                      return;
-                    }
-                    if (event is FlTapUpEvent || event is FlLongPressEnd) {
-                      _mapController?.deleteOverlay(
-                        NOverlayInfo(
-                          type: NOverlayType.marker,
-                          id: _touchMarkerId,
-                        ),
-                      );
-                    } else {
-                      final spotIndex =
-                          touchResponse.lineBarSpots!.first.spotIndex;
-                      if (spotIndex < chartData.length) {
-                        final pointData = chartData[spotIndex];
-                        final nLatLng = NLatLng(
-                          pointData['lat'],
-                          pointData['lng'],
-                        );
-                        _mapController?.updateCamera(
-                          NCameraUpdate.scrollAndZoomTo(
-                            target: nLatLng,
-                            zoom: 18,
-                          ),
-                        );
-                        _mapController?.addOverlay(
-                          NMarker(id: _touchMarkerId, position: nLatLng),
-                        );
-                      }
-                    }
-                  },
-                ),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: chartData.asMap().entries.map((e) {
-                      final pace = e.value['pace'] as num;
-                      return FlSpot(e.key.toDouble(), pace.toDouble());
-                    }).toList(),
-                    isCurved: true,
-                    color: Colors.blueAccent,
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: Colors.blueAccent.withAlpha(50),
-                    ),
-                  ),
-                ],
-              ),
+        // ----> 1. 새로운 '상세히 보기' 버튼 <----
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.analytics_outlined),
+            label: const Text(AppStrings.viewDetails),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              textStyle: const TextStyle(fontSize: 16),
             ),
+            onPressed: () {
+              // TODO: 다음 단계에서 InteractiveMapScreen으로 이동
+              /*
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => InteractiveMapScreen(run: widget.run),
+              ));
+              */
+            },
           ),
+        ),
       ],
     );
   }
@@ -194,48 +109,77 @@ class _RunDetailWidgetState extends State<RunDetailWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.run.title ?? FormatUtils.formatDate(widget.run.createdAt),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatColumn(
-                  AppStrings.runDistance,
-                  FormatUtils.formatDistance(widget.run.distance),
-                  isMain: true,
+                Text(
+                  widget.run.title ??
+                      FormatUtils.formatDate(widget.run.createdAt),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                _buildStatColumn(
-                  AppStrings.runTime,
-                  FormatUtils.formatDuration(widget.run.duration),
-                ),
-                _buildStatColumn(
-                  AppStrings.runAvgPace,
-                  FormatUtils.formatPace(widget.run.avgPace),
-                ),
+                if (widget.run.isEdited) ...[
+                  const SizedBox(width: 8),
+                  const Text(
+                    AppStrings.runIsEdited,
+                    style: TextStyle(color: Colors.orange, fontSize: 12),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 24),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatColumn(
-                  AppStrings.runCalories,
-                  widget.run.caloriesBurned?.toStringAsFixed(0) ?? '--',
-                  isSub: true,
+                Expanded(
+                  child: _buildStatColumn(
+                    '거리',
+                    FormatUtils.formatDistance(widget.run.distance),
+                    isMain: true,
+                  ),
                 ),
-                _buildStatColumn(AppStrings.runBPM, '--', isSub: true),
-                _buildStatColumn(
-                  AppStrings.runElevation,
-                  '${widget.run.totalElevationGain?.toStringAsFixed(1) ?? '--'} m',
-                  isSub: true,
+                Expanded(
+                  child: _buildStatColumn(
+                    '시간',
+                    FormatUtils.formatDuration(widget.run.duration),
+                  ),
                 ),
-                _buildStatColumn(
-                  AppStrings.runCadence,
-                  widget.run.avgCadence?.toString() ?? '--',
-                  isSub: true,
+              ],
+            ),
+            const SizedBox(height: 24),
+            // 2행: 평균 페이스, 케이던스
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatColumn(
+                    '평균 페이스',
+                    FormatUtils.formatPace(widget.run.avgPace),
+                  ),
+                ),
+                Expanded(
+                  child: _buildStatColumn(
+                    AppStrings.runCadence,
+                    '${widget.run.avgCadence?.toString() ?? '--'} spm',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // 3행: 칼로리, 심박수, 고도
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatColumn(
+                    AppStrings.runCalories,
+                    '${widget.run.caloriesBurned?.toStringAsFixed(0) ?? '--'} kcal',
+                  ),
+                ),
+                Expanded(child: _buildStatColumn(AppStrings.runBPM, '--')),
+                Expanded(
+                  child: _buildStatColumn(
+                    AppStrings.runElevation,
+                    '${widget.run.totalElevationGain?.toStringAsFixed(1) ?? '--'} m',
+                  ),
                 ),
               ],
             ),
@@ -263,7 +207,7 @@ class _RunDetailWidgetState extends State<RunDetailWidget> {
           value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: isSub ? 18 : 22,
+            fontSize: isMain ? 28 : (isSub ? 18 : 22),
           ),
         ),
       ],
@@ -295,6 +239,7 @@ class _SplitsPage extends StatelessWidget {
         ),
       );
     }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(

@@ -34,5 +34,5 @@ class Run(Base):
     # 구간별 기록을 JSON 형태로 저장합니다.
     # 예: [{"split": 1, "pace": 330.5, "elevation": 10.2, ...}]
     splits = Column(JSONB, nullable=True)
-    
+    is_edited = Column(Boolean, default=False, nullable=False)
     owner = relationship("User", back_populates="runs")
