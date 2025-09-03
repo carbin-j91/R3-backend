@@ -100,18 +100,20 @@ class _RunDetailScreenState extends State<RunDetailScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<Run>(
-        future: _runDetailFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text('기록을 불러오는 데 실패했습니다.'));
-          }
-          final run = snapshot.data!;
-          return RunDetailWidget(run: run);
-        },
+      body: SafeArea(
+        child: FutureBuilder<Run>(
+          future: _runDetailFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return const Center(child: Text('기록을 불러오는 데 실패했습니다.'));
+            }
+            final run = snapshot.data!;
+            return RunDetailWidget(run: run);
+          },
+        ),
       ),
     );
   }

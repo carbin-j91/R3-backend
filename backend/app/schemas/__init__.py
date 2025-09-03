@@ -4,3 +4,4 @@ from .course import Course, CourseCreate, CourseBase, CourseUpdate, CourseCreate
 from .course_attempt import CourseAttempt, CourseAttemptCreate
 from .post import Post, PostCreate, PostBase, Comment, CommentCreate
 from .user import User, UserCreate, UserBase, UserSocialLogin, UserUpdate
+from .stats import StatsResponse, BarChartData

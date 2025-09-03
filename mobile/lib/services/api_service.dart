@@ -6,9 +6,10 @@ import 'package:mobile/models/run.dart';
 import 'package:mobile/models/post.dart';
 import 'package:mobile/schemas/run_update_schema.dart';
 import 'package:mobile/services/secure_storage_service.dart';
+import 'package:mobile/models/stats.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://c098e1398168.ngrok-free.app';
+  static const String _baseUrl = 'https://9aeef277730e.ngrok-free.app';
 
   // --- 사용자 관련 API ---
 
@@ -164,6 +165,31 @@ class ApiService {
       return data.map((json) => Post.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load posts');
+    }
+  }
+
+  static Future<Stats> getUserStats(String period) async {
+    final token = await SecureStorageService().readToken();
+    if (token == null) {
+      throw Exception('Token not found');
+    }
+
+    // URL에 쿼리 파라미터로 period를 추가합니다.
+    final url = Uri.parse('$_baseUrl/api/v1/users/me/stats?period=$period');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return Stats.fromJson(data);
+    } else {
+      throw Exception('Failed to load stats');
     }
   }
 }

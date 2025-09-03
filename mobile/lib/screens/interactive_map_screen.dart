@@ -19,26 +19,57 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
   final String _touchMarkerId = 'touch_marker';
   ChartType _selectedChartType = ChartType.pace;
 
+  // 차트 데이터 생성
   List<FlSpot> _getChartSpots() {
     final chartData = widget.run.chartData ?? [];
     if (chartData.isEmpty) return [];
 
     return chartData.asMap().entries.map((entry) {
       final dataPoint = entry.value as Map<String, dynamic>;
-      final x = (dataPoint['time'] as int).toDouble();
+      final x = (dataPoint['time'] as num).toDouble();
 
       double y = 0;
       if (_selectedChartType == ChartType.pace) {
         y = (dataPoint['pace'] as num).toDouble();
+        // 비정상 수치 가드
         if (y <= 0 || y > 1800) y = 0;
       } else if (_selectedChartType == ChartType.elevation) {
-        // chartData에 'altitude'가 있는지 확인
         if (dataPoint.containsKey('altitude')) {
           y = (dataPoint['altitude'] as num).toDouble();
         }
       }
       return FlSpot(x, y);
     }).toList();
+  }
+
+  // 정북(북쪽 ↑)으로 리셋
+  Future<void> _resetNorth() async {
+    if (_mapController == null) return;
+    final cam = await _mapController!.getCameraPosition();
+    _mapController!.updateCamera(
+      NCameraUpdate.fromCameraPosition(
+        NCameraPosition(
+          target: cam.target, // 위치 유지
+          zoom: cam.zoom, // 줌 유지
+          bearing: 0, // 방향 초기화 (북쪽)
+          tilt: 0, // 기울임 초기화
+        ),
+      ),
+    );
+  }
+
+  LineChartBarData _lineBarData() {
+    return LineChartBarData(
+      spots: _getChartSpots(),
+      isCurved: true,
+      color: Colors.blueAccent,
+      barWidth: 3,
+      dotData: const FlDotData(show: false),
+      belowBarData: BarAreaData(
+        show: true,
+        color: Colors.blueAccent.withAlpha(50),
+      ),
+    );
   }
 
   @override
@@ -52,31 +83,53 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
       appBar: AppBar(title: const Text('상세 분석')),
       body: Column(
         children: [
+          // 지도 영역
           Expanded(
             flex: 2,
-            child: NaverMap(
-              options: const NaverMapViewOptions(),
-              onMapReady: (controller) {
-                _mapController = controller;
-                if (routePoints.isNotEmpty) {
-                  controller.updateCamera(
-                    NCameraUpdate.fitBounds(
-                      NLatLngBounds.from(routePoints),
-                      padding: const EdgeInsets.all(50),
+            child: Stack(
+              children: [
+                NaverMap(
+                  options: const NaverMapViewOptions(),
+                  onMapReady: (controller) {
+                    _mapController = controller;
+                    if (routePoints.isNotEmpty) {
+                      controller.updateCamera(
+                        NCameraUpdate.fitBounds(
+                          NLatLngBounds.from(routePoints),
+                          padding: const EdgeInsets.all(50),
+                        ),
+                      );
+                      controller.addOverlay(
+                        NPolylineOverlay(
+                          id: 'path',
+                          coords: routePoints,
+                          color: Colors.blueAccent,
+                          width: 5,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                // 우상단 정북 리셋 버튼
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Material(
+                    elevation: 2,
+                    shape: const CircleBorder(),
+                    color: Colors.white,
+                    child: IconButton(
+                      icon: const Icon(Icons.explore),
+                      tooltip: '북쪽으로 맞추기',
+                      onPressed: _resetNorth,
                     ),
-                  );
-                  controller.addOverlay(
-                    NPolylineOverlay(
-                      id: 'path',
-                      coords: routePoints,
-                      color: Colors.blueAccent,
-                      width: 5,
-                    ),
-                  );
-                }
-              },
+                  ),
+                ),
+              ],
             ),
           ),
+
+          // 차트 영역
           Expanded(
             flex: 1,
             child: Padding(
@@ -143,7 +196,9 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                               final spotIndex =
                                   touchResponse.lineBarSpots!.first.spotIndex;
                               if (spotIndex < chartData.length) {
-                                final pointData = chartData[spotIndex];
+                                final pointData =
+                                    chartData[spotIndex]
+                                        as Map<String, dynamic>;
                                 final nLatLng = NLatLng(
                                   pointData['lat'],
                                   pointData['lng'],
@@ -172,20 +227,6 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  LineChartBarData _lineBarData() {
-    return LineChartBarData(
-      spots: _getChartSpots(),
-      isCurved: true,
-      color: Colors.blueAccent,
-      barWidth: 3,
-      dotData: const FlDotData(show: false),
-      belowBarData: BarAreaData(
-        show: true,
-        color: Colors.blueAccent.withAlpha(50),
       ),
     );
   }

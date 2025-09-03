@@ -159,4 +159,19 @@ class AppStrings {
   static const String editRunDistance = '거리 (km)';
   static const String editRunDuration = '시간';
   static const String runIsEdited = '(수정됨)';
+  // 기록 페이지 탭
+  static const String recordTabActivity = '활동';
+  static const String recordTabAchievements = '달성기록';
+  static const String recordTabGoals = '목표';
+
+  // 활동 탭
+  static const String activityPeriodWeekly = '주간';
+  static const String activityPeriodMonthly = '월별';
+  static const String activityPeriodYearly = '연간';
+  static const String activityPeriodAll = '전체';
+  static const String activityRuns = '횟수';
+  static const String activityStatsError = '통계를 불러오는 데 실패했습니다.';
+  static const String activityNoData = '데이터가 없습니다.';
+  static const String activityNoRuns = '아직 러닝 기록이 없습니다.';
+  static const String activityTryAgain = '다시 시도';
 }

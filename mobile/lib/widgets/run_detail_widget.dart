@@ -3,8 +3,7 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/utils/format_utils.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:mobile/screens/full_screen_map.dart'; // 2단계에서 추가할 파일
+import 'package:mobile/screens/interactive_map_screen.dart'; // 2단계에서 추가할 파일
 
 class RunDetailWidget extends StatefulWidget {
   final Run run;
@@ -29,7 +28,7 @@ class _RunDetailWidgetState extends State<RunDetailWidget> {
     final chartData = (widget.run.chartData ?? []).cast<Map<String, dynamic>>();
 
     return ListView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
       children: [
         // 1. 러닝 결과 요약
         _buildSummaryCard(),
@@ -52,8 +51,8 @@ class _RunDetailWidgetState extends State<RunDetailWidget> {
           height: 300,
           child: NaverMap(
             options: const NaverMapViewOptions(
-              scrollGesturesEnable: true,
-              zoomGesturesEnable: true,
+              scrollGesturesEnable: false,
+              zoomGesturesEnable: false,
             ),
             onMapReady: (controller) {
               if (routePoints.isNotEmpty) {
@@ -87,12 +86,11 @@ class _RunDetailWidgetState extends State<RunDetailWidget> {
               textStyle: const TextStyle(fontSize: 16),
             ),
             onPressed: () {
-              // TODO: 다음 단계에서 InteractiveMapScreen으로 이동
-              /*
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => InteractiveMapScreen(run: widget.run),
-              ));
-              */
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => InteractiveMapScreen(run: widget.run),
+                ),
+              );
             },
           ),
         ),

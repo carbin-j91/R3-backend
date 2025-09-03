@@ -117,6 +117,22 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
+  // 정북(북쪽 ↑)으로 리셋
+  Future<void> _resetNorth() async {
+    if (_mapController == null) return;
+    final cam = await _mapController!.getCameraPosition();
+    _mapController!.updateCamera(
+      NCameraUpdate.fromCameraPosition(
+        NCameraPosition(
+          target: cam.target, // 위치 유지
+          zoom: cam.zoom, // 줌 유지
+          bearing: 0, // 방향 초기화 (북쪽)
+          tilt: 0, // 기울임 초기화
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -146,6 +162,20 @@ class _MapScreenState extends State<MapScreen> {
                 },
               ),
 
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Material(
+                elevation: 2,
+                shape: const CircleBorder(),
+                color: Colors.white,
+                child: IconButton(
+                  icon: const Icon(Icons.explore),
+                  tooltip: '북쪽으로 맞추기',
+                  onPressed: _resetNorth,
+                ),
+              ),
+            ),
             // 하단 '러닝 시작' 버튼 또는 카운트다운
             Positioned(
               bottom: 20,
