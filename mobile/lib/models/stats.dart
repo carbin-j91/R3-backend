@@ -1,6 +1,6 @@
 // 막대 차트의 개별 막대를 위한 모델
 class BarChartData {
-  final String label; // x축 라벨 (예: '월', '01일')
+  final String label; // x축 라벨 (예: '월', '01')
   final double value; // y축 값 (예: 총 거리)
 
   BarChartData({required this.label, required this.value});

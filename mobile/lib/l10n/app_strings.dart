@@ -131,6 +131,7 @@ class AppStrings {
   // 구간 기록 페이지 헤더
   static const String splitsHeaderElevation = '고도';
   static const String splitsHeaderCadence = '케이던스';
+  static const String splitsHeaderCumulativeTime = '누적 시간';
 
   // 프로필 수정 화면
   static const String editProfileTitle = '프로필 수정';
@@ -174,4 +175,15 @@ class AppStrings {
   static const String activityNoData = '데이터가 없습니다.';
   static const String activityNoRuns = '아직 러닝 기록이 없습니다.';
   static const String activityTryAgain = '다시 시도';
+
+  static const String activityTabTitle = '활동';
+  static const String periodWeekly = '주간';
+  static const String periodMonthly = '월별';
+  static const String periodYearly = '연간';
+  static const String periodAll = '전체';
+  static const String totalDistance = '총 거리';
+  static const String totalRuns = '총 러닝';
+  static const String avgPace = '평균 페이스';
+  static const String distanceChartTitle = '거리 차트';
+  static const String noActivityData = '표시할 활동 데이터가 없습니다.';
 }

@@ -7,9 +7,10 @@ import 'package:mobile/models/post.dart';
 import 'package:mobile/schemas/run_update_schema.dart';
 import 'package:mobile/services/secure_storage_service.dart';
 import 'package:mobile/models/stats.dart';
+import 'package:mobile/models/stats.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://9aeef277730e.ngrok-free.app';
+  static const String _baseUrl = 'https://cea149b2cf0d.ngrok-free.app';
 
   // --- 사용자 관련 API ---
 

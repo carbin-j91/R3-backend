@@ -35,4 +35,5 @@ class Run(Base):
     # 예: [{"split": 1, "pace": 330.5, "elevation": 10.2, ...}]
     splits = Column(JSONB, nullable=True)
     is_edited = Column(Boolean, default=False, nullable=False)
+    chart_data = Column(JSONB, nullable=True)
     owner = relationship("User", back_populates="runs")

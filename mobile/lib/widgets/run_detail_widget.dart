@@ -4,6 +4,7 @@ import 'package:mobile/l10n/app_strings.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/utils/format_utils.dart';
 import 'package:mobile/screens/interactive_map_screen.dart'; // 2단계에서 추가할 파일
+import 'package:mobile/screens/full_screen_map.dart';
 
 class RunDetailWidget extends StatefulWidget {
   final Run run;
@@ -80,17 +81,28 @@ class _RunDetailWidgetState extends State<RunDetailWidget> {
           padding: const EdgeInsets.all(16.0),
           child: ElevatedButton.icon(
             icon: const Icon(Icons.analytics_outlined),
-            label: const Text(AppStrings.viewDetails),
+            label: const Text('경로 데이터 상세히 보기'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
               textStyle: const TextStyle(fontSize: 16),
             ),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => InteractiveMapScreen(run: widget.run),
-                ),
-              );
+              // chartData가 있을 때만 인터랙티브 지도로 이동
+              if (chartData.isNotEmpty) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => InteractiveMapScreen(run: widget.run),
+                  ),
+                );
+              } else {
+                // chartData가 없으면 전체 화면 지도로 이동
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        FullScreenMap(routePoints: routePoints),
+                  ),
+                );
+              }
             },
           ),
         ),
@@ -260,6 +272,14 @@ class _SplitsPage extends StatelessWidget {
                 ),
               ),
               Expanded(
+                flex: 3,
+                child: Text(
+                  AppStrings.splitsHeaderCumulativeTime,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Expanded(
                 flex: 2,
                 child: Text(
                   AppStrings.splitsHeaderElevation,
@@ -284,6 +304,11 @@ class _SplitsPage extends StatelessWidget {
             itemCount: splits.length,
             itemBuilder: (context, index) {
               final split = splits[index];
+              // cumulative_time이 null이면 0을 사용하도록 하여 에러를 방지합니다.
+              final cumulativeTime = Duration(
+                seconds: split['cumulative_time'] ?? 0,
+              );
+
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Row(
@@ -293,6 +318,15 @@ class _SplitsPage extends StatelessWidget {
                       flex: 3,
                       child: Text(
                         _formatPace(split['pace']),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        FormatUtils.formatDuration(
+                          cumulativeTime.inSeconds.toDouble(),
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ),

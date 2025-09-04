@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/l10n/app_strings.dart';
-import 'package:mobile/models/stats.dart'
-    as stats_model; // 1. 이름 충돌을 피하기 위해 별칭(alias) 사용
+import 'package:mobile/models/stats.dart' as stats_model; // 이름 충돌 방지 alias
 import 'package:mobile/services/api_service.dart';
 import 'package:mobile/utils/format_utils.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:mobile/models/run.dart';
 import 'package:mobile/screens/run_detail_screen.dart';
-import 'package:intl/intl.dart';
+import 'package:mobile/widgets/route_thumbnail.dart';
 
 enum StatsPeriod { weekly, monthly, yearly, all }
 
@@ -53,7 +52,7 @@ class _ActivityTabState extends State<ActivityTab> {
                   if (snapshot.hasError) {
                     return Center(child: Text(AppStrings.activityStatsError));
                   }
-                  if (!snapshot.hasData || snapshot.data!.chartData.isEmpty) {
+                  if (!snapshot.hasData || snapshot.data!.totalRuns == 0) {
                     return const Center(child: Text(AppStrings.activityNoData));
                   }
                   final stats = snapshot.data!;
@@ -73,7 +72,13 @@ class _ActivityTabState extends State<ActivityTab> {
           ),
         ),
         const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
-        // 2. RunningRecordsList를 여기에 직접 포함시킵니다.
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            "최근 활동",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
         const RunningRecordsList(),
       ],
     );
@@ -117,7 +122,7 @@ class _ActivityTabState extends State<ActivityTab> {
           '거리',
           FormatUtils.formatDistance(stats.totalDistanceKm * 1000),
         ),
-        _buildStatColumn('횟수', '${stats.totalRuns}회'),
+        _buildStatColumn(AppStrings.activityRuns, '${stats.totalRuns}회'),
         _buildStatColumn('평균 페이스', FormatUtils.formatPace(stats.avgPacePerKm)),
         _buildStatColumn(
           '시간',
@@ -143,6 +148,8 @@ class _ActivityTabState extends State<ActivityTab> {
     );
   }
 
+  /// 차트: fl_chart의 BarChartData와 모델의 BarChartData가 이름이 같으므로
+  /// 파라미터는 models의 타입으로 명시합니다.
   Widget _buildBarChart(List<stats_model.BarChartData> chartData) {
     return BarChart(
       BarChartData(
@@ -153,17 +160,28 @@ class _ActivityTabState extends State<ActivityTab> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
+              reservedSize: 22,
               getTitlesWidget: (value, meta) {
-                final idx = value.toInt();
-                if (idx < 0 || idx >= chartData.length) {
+                final index = value.toInt();
+                if (index < 0 || index >= chartData.length) {
                   return const SizedBox.shrink();
                 }
+                final label = chartData[index].label;
+
+                if (_selectedPeriod == StatsPeriod.monthly) {
+                  final day = int.tryParse(label) ?? 0;
+                  if (day > 0 && day % 7 == 0) {
+                    return SideTitleWidget(
+                      meta: meta, // ← 최신 fl_chart는 meta 필수
+                      child: Text(label, style: const TextStyle(fontSize: 10)),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }
+
                 return SideTitleWidget(
-                  meta: meta, // ← axisSide 대신 meta 사용!
-                  child: Text(
-                    chartData[idx].label,
-                    style: const TextStyle(fontSize: 10),
-                  ),
+                  meta: meta, // ← axisSide 대신 meta 사용
+                  child: Text(label, style: const TextStyle(fontSize: 10)),
                 );
               },
             ),
@@ -185,7 +203,7 @@ class _ActivityTabState extends State<ActivityTab> {
             x: entry.key,
             barRods: [
               BarChartRodData(
-                toY: entry.value.value,
+                toY: entry.value.value, // 모델의 value 사용
                 color: Colors.blueAccent,
                 width: 12,
                 borderRadius: BorderRadius.circular(4),
@@ -196,9 +214,12 @@ class _ActivityTabState extends State<ActivityTab> {
       ),
     );
   }
-}
+} // <-- ✅ _ActivityTabState 끝을 확실히 닫아줍니다.
 
-// 4. 러닝 기록 목록 관련 위젯들을 이 파일로 이동시킵니다.
+// =======================
+// 러닝 기록 목록 위젯들 (파일 최상위)
+// =======================
+
 class RunningRecordsList extends StatefulWidget {
   const RunningRecordsList({super.key});
   @override
@@ -206,24 +227,24 @@ class RunningRecordsList extends StatefulWidget {
 }
 
 class _RunningRecordsListState extends State<RunningRecordsList> {
-  Future<List<Run>>? runsFuture;
+  Future<List<Run>>? _runsFuture;
 
   @override
   void initState() {
     super.initState();
-    runsFuture = ApiService.getRuns();
+    _runsFuture = ApiService.getRuns();
   }
 
-  void refreshRuns() {
+  void _refreshRuns() {
     setState(() {
-      runsFuture = ApiService.getRuns();
+      _runsFuture = ApiService.getRuns();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Run>>(
-      future: runsFuture,
+      future: _runsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -236,7 +257,7 @@ class _RunningRecordsListState extends State<RunningRecordsList> {
                 Text('기록을 불러오는데 실패했습니다: ${snapshot.error}'),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: refreshRuns,
+                  onPressed: _refreshRuns,
                   child: const Text(AppStrings.activityTryAgain),
                 ),
               ],
@@ -254,14 +275,13 @@ class _RunningRecordsListState extends State<RunningRecordsList> {
             );
           }
           return ListView.builder(
-            // ListView 안에 ListView를 넣을 때 필요한 설정
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: runs.length,
             itemBuilder: (context, index) {
               return RunListItem(
                 run: runs[index],
-                onRecordDeleted: refreshRuns,
+                onRecordDeleted: _refreshRuns,
               );
             },
           );
@@ -283,16 +303,11 @@ class RunListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasRoute = run.route != null && run.route!.length >= 2;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        title: Text(
-          run.title ?? FormatUtils.formatDate(run.createdAt),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          '거리: ${FormatUtils.formatDistance(run.distance)} / 시간: ${FormatUtils.formatDuration(run.duration)}',
-        ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: () async {
           final result = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
@@ -303,6 +318,33 @@ class RunListItem extends StatelessWidget {
             onRecordDeleted();
           }
         },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (hasRoute)
+              RouteThumbnail(route: (run.route!).cast<Map<String, dynamic>>()),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    run.title ?? FormatUtils.formatDate(run.createdAt),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '거리: ${FormatUtils.formatDistance(run.distance)} / 시간: ${FormatUtils.formatDuration(run.duration)}',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

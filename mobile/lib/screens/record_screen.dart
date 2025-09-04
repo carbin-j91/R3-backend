@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/l10n/app_strings.dart';
-import 'package:mobile/screens/tabs/activity_tab.dart'; // 1. 새로 만든 ActivityTab을 가져옵니다.
+import 'package:mobile/tabs/activity_tab.dart'; // 1. 새로 만든 ActivityTab을 가져옵니다.
 
 class RecordScreen extends StatelessWidget {
   const RecordScreen({super.key});
