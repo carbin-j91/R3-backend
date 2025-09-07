@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -22,6 +21,8 @@ class _MapScreenState extends State<MapScreen> {
   bool _isCountingDown = false;
   String _countdownText = '';
   Timer? _countdownTimer;
+
+  bool _isCourseCandidate = false;
 
   @override
   void initState() {
@@ -108,7 +109,8 @@ class _MapScreenState extends State<MapScreen> {
           if (mounted) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => const RunningStatsScreen(),
+                builder: (context) =>
+                    RunningStatsScreen(isCourseCandidate: _isCourseCandidate),
               ),
             );
           }
@@ -161,7 +163,39 @@ class _MapScreenState extends State<MapScreen> {
                   _mapController = controller;
                 },
               ),
-
+            Positioned(
+              top: 10,
+              left: 16,
+              right: 16,
+              child: Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: SwitchListTile(
+                    title: const Text(
+                      AppStrings.recordAsCourseCandidate,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    value: _isCourseCandidate,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _isCourseCandidate = value;
+                      });
+                    },
+                    secondary: IconButton(
+                      icon: const Icon(Icons.info_outline, color: Colors.grey),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(AppStrings.courseCandidateTooltip),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               top: 12,
               right: 12,

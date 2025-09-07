@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui' show FontFeature;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
@@ -15,7 +14,13 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 class RunningStatsScreen extends StatefulWidget {
-  const RunningStatsScreen({super.key});
+  // ✅ 추가: 코스 후보 여부
+  final bool isCourseCandidate;
+
+  const RunningStatsScreen({
+    super.key,
+    this.isCourseCandidate = false, // 기본값
+  });
 
   @override
   State<RunningStatsScreen> createState() => _RunningStatsScreenState();
@@ -116,8 +121,10 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
     try {
       await _ensureLocationReady();
 
-      // 서버에 빈 run 생성
-      final Run newRun = await ApiService.createRun();
+      // ✅ 토글 값 전달
+      final Run newRun = await ApiService.createRun(
+        isCourseCandidate: widget.isCourseCandidate,
+      );
 
       // 시작할 때 현재 위치를 한 번 읽어 시드(연속 거리 계산 시작점)
       final pos = await Geolocator.getCurrentPosition(
@@ -531,7 +538,7 @@ class _RunningStatsScreenState extends State<RunningStatsScreen> {
       );
     }
     return PopScope(
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         final shouldPop = await _onWillPop();
         if (shouldPop && mounted) Navigator.of(context).pop();

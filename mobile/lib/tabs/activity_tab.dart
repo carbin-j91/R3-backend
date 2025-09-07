@@ -304,6 +304,7 @@ class RunListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasRoute = run.route != null && run.route!.length >= 2;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       clipBehavior: Clip.antiAlias,
@@ -318,32 +319,80 @@ class RunListItem extends StatelessWidget {
             onRecordDeleted();
           }
         },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (hasRoute)
-              RouteThumbnail(route: (run.route!).cast<Map<String, dynamic>>()),
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    run.title ?? FormatUtils.formatDate(run.createdAt),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+        child: SizedBox(
+          height: 96, // 카드 높이를 살짝 고정해 리스트가 촘촘하고 균일하게 보이도록
+          child: Row(
+            children: [
+              // 왼쪽: 제목/요약 텍스트
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        run.title ?? FormatUtils.formatDate(run.createdAt),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '거리: ${FormatUtils.formatDistance(run.distance)} · '
+                        '시간: ${FormatUtils.formatDuration(run.duration)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 오른쪽: 미니 썸네일 (경로 있을 때만)
+              if (hasRoute)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 110,
+                      height: 70,
+                      // RouteThumbnail이 부모 사이즈에 맞춰 그려지도록 SizedBox에 꽉 채움
+                      child: RouteThumbnail(
+                        route: (run.route!).cast<Map<String, dynamic>>(),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '거리: ${FormatUtils.formatDistance(run.distance)} / 시간: ${FormatUtils.formatDuration(run.duration)}',
-                    style: TextStyle(color: Colors.grey.shade600),
+                )
+              else
+                // 경로 없을 때는 심플한 자리표시자
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 110,
+                      height: 70,
+                      color: const Color(0xFFF2F2F2),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.route,
+                        size: 22,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+            ],
+          ),
         ),
       ),
     );

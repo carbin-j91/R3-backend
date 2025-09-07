@@ -20,6 +20,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   # 2. Redis 캐시/메시지 브로커 서비스
   redis:
     image: redis:7-alpine
@@ -31,19 +32,20 @@ services:
   # 3. FastAPI 백엔드 API 서비스
   api:
     container_name: r3_api
-    # 현재 디렉토리의 Dockerfile을 사용하여 이미지를 빌드합니다. (다음 단계에서 생성 예정)
+    # 현재 디렉토리의 Dockerfile을 사용하여 이미지를 빌드합니다. (backend 루트 기준)
     build: .
-    #command: poetry run alembic upgrade head
     command: poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    #command: poetry run alembic revision --autogenerate -m "Add runs table"
     volumes:
       # 현재 폴더(backend)를 컨테이너의 /app 폴더와 동기화하여 코드 변경 즉시 반영
       - .:/app
       - /app/.venv
+      # ✅ 미디어 영속화: 컨테이너의 /app/media ↔ 호스트 ./media
+      - ./media:/app/media
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://r3user:r3password@db:5432/r3db
+    # ✅ 환경변수는 .env 파일로 주입(루트/동일 위치 .env)
+    env_file:
+      - ./.env
     # db와 redis 서비스가 먼저 실행된 후에 api 서비스를 실행
     depends_on:
       db:
@@ -51,6 +53,7 @@ services:
       redis:
         condition: service_started
     restart: unless-stopped
+
   # ----> 4. Alembic 마이그레이션 전용 서비스를 추가합니다. <----
   alembic:
     build: .
@@ -59,8 +62,10 @@ services:
     volumes:
       - .:/app
       - /app/.venv
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://r3user:r3password@db:5432/r3db
+      # (선택) Alembic 실행 중에도 media 접근이 필요하면 아래 주석 해제
+      # - ./media:/app/media
+    env_file:
+      - ./.env
     depends_on:
       db:
         condition: service_healthy # db 서비스가 'healthy' 상태가 될 때까지 기다립니다.

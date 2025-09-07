@@ -161,11 +161,13 @@ class AppStrings {
   static const String editRunDuration = '시간';
   static const String runIsEdited = '(수정됨)';
   // 기록 페이지 탭
+  static const String recordTabRunDiary = '런다이어리';
   static const String recordTabActivity = '활동';
   static const String recordTabAchievements = '달성기록';
   static const String recordTabGoals = '목표';
 
   // 활동 탭
+  static const String activityRun = '러닝';
   static const String activityPeriodWeekly = '주간';
   static const String activityPeriodMonthly = '월별';
   static const String activityPeriodYearly = '연간';
@@ -186,4 +188,8 @@ class AppStrings {
   static const String avgPace = '평균 페이스';
   static const String distanceChartTitle = '거리 차트';
   static const String noActivityData = '표시할 활동 데이터가 없습니다.';
+
+  static const String recordAsCourseCandidate = '코스 후보로 기록';
+  static const String courseCandidateTooltip =
+      '이 러닝을 나중에 다른 사람들에게 공유할 수 있는 코스로 만들 수 있습니다.';
 }

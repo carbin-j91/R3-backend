@@ -51,12 +51,9 @@ async def update_course(db: AsyncSession, db_course: models.Course, course_in: s
     """
     코스를 수정합니다.
     """
-    update_data = course_in.model_dump(exclude_unset=True)
-    
-    for key, value in update_data.items():
-        setattr(db_course, key, value)
-        
-    db.add(db_course)
+    data = course_in.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        setattr(db_course, k, v)
     await db.commit()
     await db.refresh(db_course)
     return db_course

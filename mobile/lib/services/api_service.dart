@@ -10,7 +10,7 @@ import 'package:mobile/models/stats.dart';
 import 'package:mobile/models/stats.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://cea149b2cf0d.ngrok-free.app';
+  static const String _baseUrl = 'https://c817158d5eb6.ngrok-free.app';
 
   // --- 사용자 관련 API ---
 
@@ -74,18 +74,27 @@ class ApiService {
   }
 
   // --- 러닝 기록 관련 API ---
-
-  static Future<Run> createRun() async {
+  static Future<Run> createRun({required bool isCourseCandidate}) async {
     final token = await SecureStorageService().readToken();
     if (token == null) throw Exception('Token not found');
+
     final url = Uri.parse('$_baseUrl/api/v1/runs/');
     final response = await http.post(
       url,
-      headers: {'Authorization': 'Bearer $token'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      // isCourseCandidate 값을 JSON 본문에 담아 보냅니다.
+      body: jsonEncode({'is_course_candidate': isCourseCandidate}),
     );
-    if (response.statusCode == 200) {
-      return Run.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // 201 Created도 성공으로 처리
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return Run.fromJson(data);
     } else {
+      print('Failed to create run: ${response.body}');
       throw Exception('Failed to create run');
     }
   }

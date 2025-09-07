@@ -1,34 +1,76 @@
+# app/models/course.py
 import uuid
-from sqlalchemy import Column, String, Text, DateTime, Float, ForeignKey
+from typing import TYPE_CHECKING
+from sqlalchemy import Column, String, Boolean, DateTime, Float, ForeignKey, Text, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-
+from sqlalchemy.sql import func
 from app.db.session import Base
 
+if TYPE_CHECKING:
+    from .run import Run
+    from .user import User
+
 class Course(Base):
-    """
-    사용자가 생성한 '코스' 정보를 저장하는 테이블의 SQLAlchemy 모델입니다.
-    """
     __tablename__ = "courses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, index=True, nullable=False)
     description = Column(Text, nullable=True)
 
-    # User 모델과의 관계 설정
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-
-    # 코스의 원본이 된 Run 기록의 ID (선택사항)
     original_run_id = Column(UUID(as_uuid=True), ForeignKey("runs.id"), nullable=True)
 
-    distance = Column(Float, nullable=False) # 미터(m) 단위
-    duration = Column(Float, nullable=False) # 초(s) 단위
-    
-    # 코스 경로 데이터
-    route = Column(JSONB, nullable=True)
+    distance = Column(Float, nullable=False)  # meters
+    route = Column(JSONB, nullable=True)      # 초기엔 JSONB 유지(추후 PostGIS로 이관)
+    rally_points = Column(JSONB, nullable=True)
 
-    created_at = Column(DateTime, default=func.now())
+    status = Column(String, default="draft", nullable=False)       # draft/published/archived
+    visibility = Column(String, default="private", nullable=False) # private/public/unlisted
 
-    # User 모델과의 관계 설정
-    creator = relationship("User")
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    # 관계
+    owner = relationship("User", lazy="selectin")
+    # ✅ 오타 수정: back_populates
+    # ✅ Run과의 역방향 관계 이름이 created_course여야 함
+    original_run = relationship(
+        "Run",
+        back_populates="created_course",
+        lazy="selectin",
+    )
+
+    attempts = relationship(
+        "CourseAttempt",
+        back_populates="course",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (
+        # 같은 사용자가 같은 이름으로 중복 코스 생성 방지(선택)
+        UniqueConstraint('user_id', 'name', name='uq_courses_user_name'),
+        Index('ix_courses_status', 'status'),
+        Index('ix_courses_visibility', 'visibility'),
+    )
+
+
+class CourseAttempt(Base):
+    __tablename__ = "course_attempts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+    run_id = Column(UUID(as_uuid=True), ForeignKey("runs.id"), unique=True, nullable=False)
+
+    # 서버가 계산하여 기록(생성 시 필수 X)
+    similarity_score = Column(Float, nullable=True)
+    is_successful = Column(Boolean, default=False, nullable=False)
+
+    attempted_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    # 관계
+    user = relationship("User", lazy="selectin")
+    course = relationship("Course", back_populates="attempts", lazy="selectin")
+    run = relationship("Run", back_populates="course_attempt", lazy="selectin")

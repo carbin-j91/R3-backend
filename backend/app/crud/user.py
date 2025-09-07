@@ -3,7 +3,6 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 import uuid
-
 from app import models, schemas
 from app.core.security import get_password_hash
 

@@ -3,8 +3,6 @@ from sqlalchemy import Column, String, Boolean, DateTime, Float, ForeignKey, Int
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-
-
 from app.db.session import Base
 
 class Run(Base):
@@ -36,4 +34,24 @@ class Run(Base):
     splits = Column(JSONB, nullable=True)
     is_edited = Column(Boolean, default=False, nullable=False)
     chart_data = Column(JSONB, nullable=True)
-    owner = relationship("User", back_populates="runs")
+    
+    is_course_candidate = Column(Boolean, default=False, nullable=False)
+
+    # 유저 관계
+    owner = relationship("User", back_populates="runs", lazy="selectin")
+
+    # ✅ 코스 생성 원본 런(1:1)
+    created_course = relationship(
+        "Course",
+        back_populates="original_run",
+        uselist=False,
+        lazy="selectin",
+    )
+
+    # ✅ 코스 도전(1:1) – 한 Run은 하나의 CourseAttempt와만 매핑
+    course_attempt = relationship(
+        "CourseAttempt",
+        back_populates="run",
+        uselist=False,
+        lazy="selectin",
+    )
