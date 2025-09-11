@@ -25,7 +25,7 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
     if (chartData.isEmpty) return [];
 
     return chartData.asMap().entries.map((entry) {
-      final dataPoint = entry.value as Map<String, dynamic>;
+      final dataPoint = entry.value;
       final x = (dataPoint['time'] as num).toDouble();
 
       double y = 0;
@@ -89,9 +89,14 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
             child: Stack(
               children: [
                 NaverMap(
-                  options: const NaverMapViewOptions(),
+                  options: const NaverMapViewOptions(
+                    locationButtonEnable: false,
+                  ),
                   onMapReady: (controller) {
                     _mapController = controller;
+                    controller.setLocationTrackingMode(
+                      NLocationTrackingMode.noFollow,
+                    );
                     if (routePoints.isNotEmpty) {
                       controller.updateCamera(
                         NCameraUpdate.fitBounds(
@@ -196,9 +201,7 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                               final spotIndex =
                                   touchResponse.lineBarSpots!.first.spotIndex;
                               if (spotIndex < chartData.length) {
-                                final pointData =
-                                    chartData[spotIndex]
-                                        as Map<String, dynamic>;
+                                final pointData = chartData[spotIndex];
                                 final nLatLng = NLatLng(
                                   pointData['lat'],
                                   pointData['lng'],
