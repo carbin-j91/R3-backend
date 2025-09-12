@@ -5,7 +5,7 @@ import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.da
 import 'package:mobile/screens/home_screen.dart';
 import 'package:mobile/screens/explore_screen.dart';
 import 'package:mobile/screens/record_screen.dart';
-import 'package:mobile/screens/album_screen.dart';
+import 'package:mobile/screens/community_screen.dart';
 import 'package:mobile/screens/map_screen.dart';
 import 'package:mobile/screens/my_info_screen.dart';
 
@@ -27,14 +27,14 @@ class _MainScreenState extends State<MainScreen>
     Icons.home,
     Icons.explore,
     Icons.article_outlined,
-    Icons.photo_album_outlined,
+    Icons.forum_outlined,
   ];
 
   final List<Widget> _widgetOptions = <Widget>[
     const HomeScreen(),
     const ExploreScreen(),
     const RecordScreen(),
-    const AlbumScreen(),
+    const CommunityScreen(),
   ];
 
   @override
@@ -122,7 +122,7 @@ class _MainScreenState extends State<MainScreen>
       AppStrings.tabHome,
       AppStrings.tabExplore,
       AppStrings.tabRecord,
-      AppStrings.tabAlbum,
+      AppStrings.tabCommunity,
     ];
     return Expanded(
       child: InkWell(

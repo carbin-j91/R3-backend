@@ -17,7 +17,8 @@ class AppStrings {
   static const String tabRanking = '랭킹';
   static const String tabCreate = '생성';
   static const String tabExplore = '탐색';
-  static const String tabMyInfo = '내 정보';
+  static const String tabCommunity = '커뮤니티';
+  //  static const String tabMyInfo = '내 정보';
 
   // 플로팅 버튼 메뉴 (퀵 스타트)
   static const String quickStartRun = '러닝 시작';
@@ -52,7 +53,7 @@ class AppStrings {
   // 기록 페이지 탭
   static const String recordTabRuns = '러닝기록';
   static const String recordTabJournal = '훈련일지';
-  static const String recordTabAlbum = '앨범';
+  static const String recordTabCommunity = '앨범';
 
   // 하단 탭
   static const String tabAlbum = '앨범';

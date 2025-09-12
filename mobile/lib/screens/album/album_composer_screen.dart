@@ -10,7 +10,7 @@ import 'package:mobile/utils/format_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/rendering.dart';
 import 'package:mobile/widgets/route_thumbnail.dart';
-import 'package:mobile/screens/album_screen.dart' show _ComposerResult;
+import 'package:mobile/screens/community_screen.dart' show _ComposerResult;
 
 enum OverlayTemplate { minimal, card, bold }
 

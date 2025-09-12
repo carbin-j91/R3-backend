@@ -9,7 +9,7 @@ import 'package:mobile/services/secure_storage_service.dart';
 import 'package:mobile/models/stats.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://061adb558f26.ngrok-free.app';
+  static const String _baseUrl = 'https://217a2560a337.ngrok-free.app';
 
   // --- 공통 헤더 ---
   static Future<Map<String, String>> _authHeaders({

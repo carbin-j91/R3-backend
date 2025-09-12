@@ -3,8 +3,6 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from app.core.config import settings
 
-# CryptContext는 어떤 해싱 알고리즘을 사용할지 passlib에 알려줍니다.
-# "bcrypt"는 현재 산업 표준으로 사용되는 강력한 해싱 알고리즘입니다.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_password_hash(password: str) -> str:
@@ -27,9 +25,15 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        # 기본 만료 시간: 15분
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        # 💡 수정: 하드코딩된 시간 대신 .env 파일의 설정값을 사용합니다.
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
     
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    
+    # 💡 수정: config.py에 정의된 이름으로 변경 (JWT_ 접두사 제거)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
     return encoded_jwt
